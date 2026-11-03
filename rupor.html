@@ -4244,12 +4244,17 @@
       const url = ($('#setup-url').value || '').trim();
       const key = ($('#setup-key').value || '').trim();
 
-      if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(url)) {
+      // Strip trailing slash before validating — pasting from a browser address
+      // bar often includes one, and the user should not have to notice.
+      const urlClean = url.replace(/\/+$/, '');
+      if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(urlClean)) {
         errBox.textContent = 'Адрес должен выглядеть так: https://abcdefgh.supabase.co';
         return;
       }
-      if (key.length < 40) {
-        errBox.textContent = 'Ключ скопирован не полностью — он длиной в несколько сотен символов.';
+      // The new Supabase publishable key starts with "sb_publishable_" and is
+      // shorter than the old JWT anon key.  Accept anything at least 20 chars.
+      if (key.length < 20) {
+        errBox.textContent = 'Ключ скопирован не полностью.';
         return;
       }
 
