@@ -28,6 +28,9 @@
     --accent-2:  oklch(78% 0.16 285);
     --danger:    oklch(62% 0.21 22);
     --ok:        oklch(70% 0.16 155);
+    /* Discord-blue ring for whoever is talking. Deliberately distinct from
+       the purple accent so "speaking" never reads as "screen sharing". */
+    --speak:     oklch(68% 0.19 255);
   }
 
   html, body {
@@ -268,7 +271,56 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: border-color 110ms ease, box-shadow 110ms ease;
   }
+
+  /* Speaking indicator, like the blue ring around a talking person.  Drawn as
+     an inset+outer shadow on the tile so it follows the rounded corners and
+     never covers the picture. */
+  .tile.speaking {
+    border-color: var(--speak);
+    box-shadow:
+      0 0 0 2px var(--speak),
+      0 0 18px 2px oklch(68% 0.19 255 / 0.55);
+  }
+
+  /* Level meter behind the name, so it is obvious who is making the sound. */
+  .tile .nameplate .level {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 11px;
+    margin-left: 2px;
+  }
+  .tile .nameplate .level i {
+    width: 3px;
+    border-radius: 1px;
+    background: var(--speak);
+    opacity: 0.35;
+    height: 100%;
+    transform-origin: bottom;
+    transform: scaleY(0.28);
+    transition: transform 70ms linear, opacity 110ms ease;
+  }
+  .tile.speaking .nameplate .level i { opacity: 1; }
+
+  /* The bars dance on their own while the ring is lit.  Driving them from JS
+     would need an audio stream on the listening side, and a browser keeps an
+     AudioContext asleep until its own page is clicked — so a quiet listener
+     would never see them move. */
+  @keyframes level-dance {
+    0%   { transform: scaleY(0.30); }
+    22%  { transform: scaleY(1.00); }
+    44%  { transform: scaleY(0.46); }
+    66%  { transform: scaleY(0.84); }
+    88%  { transform: scaleY(0.36); }
+    100% { transform: scaleY(0.30); }
+  }
+
+  .tile.speaking .nameplate .level i { animation: level-dance 780ms ease-in-out infinite; }
+  .tile.speaking .nameplate .level i:nth-child(2) { animation-delay: -260ms; animation-duration: 640ms; }
+  .tile.speaking .nameplate .level i:nth-child(3) { animation-delay: -420ms; animation-duration: 900ms; }
 
   /* a lone person should not own the whole window */
   .grid[data-count="1"] .tile { max-width: min(880px, 100%); justify-self: center; }
@@ -1751,6 +1803,11 @@
     localAvatar = av;
     $('#grid').appendChild(el);
     updateLocalPreview();
+    // A microphone that was already on belongs to this new tile.
+    // A microphone that was already on belongs to this new tile.
+    if (micOn && micStream) startVoiceWatch();
+    // A rebuilt tile starts plain, so restore the ring if it was lit.
+    setSpeaking(el, selfSpeaking);
   }
 
   function updateLocalPreview() {
@@ -1841,6 +1898,14 @@
     const span = document.createElement('span');
     span.textContent = name || 'Участник';
     plate.appendChild(span);
+
+    // Three little bars that dance with the voice. The ring alone says
+    // "somebody is talking"; the bars say who, even in a crowded grid.
+    const level = document.createElement('span');
+    level.className = 'level';
+    for (let i = 0; i < 3; i++) level.appendChild(document.createElement('i'));
+    plate.appendChild(level);
+
     el.appendChild(plate);
 
     $('#grid').appendChild(el);
@@ -1856,7 +1921,118 @@
     r.av.textContent = initials(r.name);
   }
 
-  // ── ZOOM A TILE ───────────────────────────────────────────────────────────
+  // ── VOICE ACTIVITY ────────────────────────────────────────────────────────
+  // A blue ring around whoever is talking, the way Discord shows it.
+  //
+  // Only the speaker measures their own voice, and the result is announced to
+  // the room over the data channel.  Analysis happens on the local microphone,
+  // never on a received stream: a browser keeps an AudioContext suspended
+  // until its own page has been clicked, and someone who joined a call just to
+  // listen may never click — their analysers would report silence forever.
+  // The person talking always clicked the microphone button, so their context
+  // is running by definition.
+  let selfSpeaking = false;
+
+  function setSpeaking(el, on) {
+    if (!el) return;
+    if (on) el.classList.add('speaking');
+    else el.classList.remove('speaking');
+  }
+
+  function setSelfSpeaking(on) {
+    if (on === selfSpeaking) return;
+    selfSpeaking = on;
+    setSpeaking(localTile, on);
+    // A ring without a microphone would be a lie, so never announce speech
+    // while muted.  The stop signal always goes out: telling the room to stop
+    // ringing is harmless, while a lost stop leaves somebody lit forever.
+    if (on && !micOn) return;
+    send({ t: 'talk', on });
+  }
+
+  // Speech is sustained; a keyboard tap is a spike.  The hold keeps the ring
+  // from flickering between syllables.
+  const VOICE_ON = 0.035;   // RMS amplitude that counts as speech
+  const VOICE_HOLD = 450;   // ms the ring stays lit after the last sound
+
+  let voiceCtx = null;
+  let voiceAnalyser = null;
+  let voiceBuf = null;
+  let voiceLoudUntil = 0;
+  let voiceSource = null;
+
+  function voiceAudioContext() {
+    if (!voiceCtx) {
+      try { voiceCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (_) { return null; }
+    }
+    return voiceCtx;
+  }
+
+  function startVoiceWatch() {
+    if (!micStream || !micStream.getAudioTracks().length) return;
+    const ctx = voiceAudioContext();
+    if (!ctx) return;
+
+    // The resume promise may never settle while the page has no activation,
+    // so it is fire-and-forget: the loop below asks for the state each frame
+    // and reconnects as soon as the context is actually running.
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    if (!voiceBuf) {
+      voiceAnalyser = ctx.createAnalyser();
+      voiceAnalyser.fftSize = 1024;
+      voiceAnalyser.smoothingTimeConstant = 0.55;
+      voiceBuf = new Float32Array(voiceAnalyser.fftSize);
+    }
+    if (voiceSource) { try { voiceSource.disconnect(); } catch (_) {} voiceSource = null; }
+    try {
+      voiceSource = ctx.createMediaStreamSource(micStream);
+      voiceSource.connect(voiceAnalyser);
+    } catch (_) { voiceSource = null; }
+    voiceLoudUntil = 0;
+    requestAnimationFrame(voiceLoop);
+  }
+
+  function stopVoiceWatch() {
+    if (voiceSource) { try { voiceSource.disconnect(); } catch (_) {} voiceSource = null; }
+    voiceLoudUntil = 0;
+    setSelfSpeaking(false);
+    setSpeaking(localTile, false);
+  }
+
+  function voiceLoop() {
+    if (!micOn || !micStream || !voiceAnalyser) return;
+    const ctx = voiceCtx;
+
+    if (ctx && ctx.state === 'suspended') {
+      // No user activation yet. The mic button press normally provides it; if
+      // not, keep asking without waiting on the promise.
+      ctx.resume().catch(() => {});
+    }
+
+    if (ctx && ctx.state === 'running') {
+      // The source may have been created while the context was still asleep.
+      if (!voiceSource) {
+        try {
+          voiceSource = ctx.createMediaStreamSource(micStream);
+          voiceSource.connect(voiceAnalyser);
+        } catch (_) { voiceSource = null; }
+      }
+      if (voiceSource) {
+        voiceAnalyser.getFloatTimeDomainData(voiceBuf);
+        let sum = 0;
+        for (let i = 0; i < voiceBuf.length; i++) sum += voiceBuf[i] * voiceBuf[i];
+        const rms = Math.sqrt(sum / voiceBuf.length);
+        if (rms >= VOICE_ON) voiceLoudUntil = performance.now() + VOICE_HOLD;
+        setSelfSpeaking(performance.now() < voiceLoudUntil);
+      }
+    }
+
+    requestAnimationFrame(voiceLoop);
+  }
+
+
   // A shared screen is unreadable in a small tile, so a click blows it up to
   // the whole window.  The state is a CSS class rather than the Fullscreen
   // API: that way it works even where fullscreen is refused (the desktop
@@ -2037,6 +2213,7 @@
     const r = remotes.get(id);
     if (r) {
       if (zoomedTile === r.el) closeZoom();
+      setSpeaking(r.el, false);
       r.el.remove();
       remotes.delete(id);
       renderCount();
@@ -2124,7 +2301,7 @@
       // Tell the newcomer what this side is already doing.  Without this the
       // other person sees initials forever when the camera was switched on
       // before the connection existed.
-      conn.send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing });
+      conn.send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing, talking: selfSpeaking });
       if (!calls.has(conn.peer)) callPeer(conn.peer);
     });
 
@@ -2145,11 +2322,20 @@
         addChat(d.name || 'Участник', String(d.text || '').slice(0, 500));
         return;
       }
+      if (d.t === 'talk') {
+        const r = remotes.get(conn.peer);
+        // A muted person cannot be speaking, whatever an old packet said.
+        const on = !!d.on && !(r && r.mic === false);
+        if (r) setSpeaking(r.el, on);
+        return;
+      }
       if (d.t === 'state') {
         const r = ensureRemote(conn.peer, d.name);
         if (typeof d.mic === 'boolean') r.mic = d.mic;
         if (typeof d.cam === 'boolean') r.camOn = d.cam;
         if (typeof d.sharing === 'boolean') r.sharing = d.sharing;
+        if (r.mic === false) setSpeaking(r.el, false);
+        else if (d.talking === true) setSpeaking(r.el, true);
         updateRemoteVisual(r);
         return;
       }
@@ -2346,6 +2532,7 @@
 
     if (localTile) { localTile.remove(); localTile = null; localVideo = null; localAvatar = null; }
     closeZoom();
+    stopVoiceWatch();
     $('#grid').innerHTML = '';
     $('#chat-log').innerHTML = '';
     $('#room').classList.add('hidden');
@@ -2374,6 +2561,8 @@
       refreshOutbound();
       broadcastState();
       updateLocalPreview();
+      // Your own ring must react to your real voice right away.
+      if (localTile) startVoiceWatch();
     } catch (e) {
       toast('Нет доступа к микрофону');
       micOn = false;
@@ -2386,6 +2575,7 @@
       micStream.getTracks().forEach(t => t.stop());
       micStream = null;
     }
+    stopVoiceWatch();
     micOn = false;
     $('#btn-mic').classList.remove('on');
     refreshOutbound();
@@ -2475,7 +2665,7 @@
   }
 
   function broadcastState() {
-    send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing });
+    send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing, talking: selfSpeaking });
   }
 
   // ── UI WIRING ─────────────────────────────────────────────────────────────
@@ -2668,6 +2858,24 @@
     }),
     peerRef: () => peer,
     get micStream() { return micStream; },
+    voice: () => {
+      let rms = null;
+      if (voiceAnalyser && voiceBuf && micOn) {
+        voiceAnalyser.getFloatTimeDomainData(voiceBuf);
+        let sum = 0;
+        for (let i = 0; i < voiceBuf.length; i++) sum += voiceBuf[i] * voiceBuf[i];
+        rms = Math.round(Math.sqrt(sum / voiceBuf.length) * 1000) / 1000;
+      }
+      return {
+        speaking: selfSpeaking,
+        micOn,
+        ctx: voiceCtx ? voiceCtx.state : null,
+        hasSource: !!voiceSource,
+        rms,
+        threshold: VOICE_ON,
+        calls: calls.size,
+      };
+    },
     get camStream() { return camStream; },
     trace: () => (peer && peer._trace ? peer._trace : []),
     raw: () => (peer && peer.mqtt && peer.mqtt.raw ? peer.mqtt.raw : []),
