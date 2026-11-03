@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Рупор — видеовстречи</title>
+<meta name="description" content="Видеовстречи и демонстрация экрана прямо из браузера. Без регистрации, без серверов, без ограничений.">
+<link rel="manifest" href="manifest-rupor.json">
+<meta name="theme-color" content="#0d0b14">
+<meta name="application-name" content="Рупор">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Рупор">
+<link rel="icon" type="image/png" sizes="192x192" href="rupor-192.png">
+<link rel="apple-touch-icon" href="rupor-192.png">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        oklch(13% 0.012 275);
+    --panel:     oklch(17% 0.014 275);
+    --panel-2:   oklch(20% 0.016 275);
+    --border:    oklch(28% 0.02 275);
+    --text:      oklch(94% 0.008 275);
+    --muted:     oklch(58% 0.012 275);
+    --accent:    oklch(66% 0.19 285);
+    --accent-2:  oklch(78% 0.16 285);
+    --danger:    oklch(62% 0.21 22);
+    --ok:        oklch(70% 0.16 155);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+  input  { font-family: inherit; }
+
+  .hidden { display: none !important; }
+
+  /* ══ HOME ══════════════════════════════════════════════════════ */
+  #home {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 30%, oklch(24% 0.06 285 / 0.55), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 50% 105%, oklch(20% 0.05 210 / 0.35), transparent 70%),
+      var(--bg);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .brand svg { width: 38px; height: 38px; }
+
+  .brand h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent-2);
+  }
+
+  .tagline {
+    font-size: 0.84rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+
+  .entry {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.5);
+  }
+
+  .entry label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: -4px;
+  }
+
+  .field {
+    width: 100%;
+    padding: 12px 14px;
+    background: oklch(15% 0.012 275);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 130ms ease, background 130ms ease;
+  }
+  .field:focus { border-color: var(--accent); background: oklch(17% 0.015 275); }
+  .field::placeholder { color: oklch(42% 0.012 275); }
+
+  .field.code {
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-align: center;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.94rem;
+    font-weight: 600;
+    transition: background 130ms ease, border-color 130ms ease, transform 80ms ease;
+  }
+  .btn:hover { background: oklch(25% 0.02 275); border-color: oklch(38% 0.03 275); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: oklch(13% 0.02 285);
+  }
+  .btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+
+  .btn.install {
+    margin-top: 10px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.88rem;
+  }
+  .btn.install:hover { color: var(--text); border-color: var(--accent); }
+  .btn.install[hidden] { display: none; }
+
+  .or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: oklch(40% 0.01 275);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 4px 0;
+  }
+  .or::before, .or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .err {
+    color: var(--danger);
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.5;
+    min-height: 1.2em;
+  }
+
+  .fineprint {
+    margin-top: 22px;
+    font-size: 0.74rem;
+    color: oklch(44% 0.01 275);
+    text-align: center;
+    line-height: 1.7;
+    max-width: 400px;
+  }
+
+  /* ══ ROOM ══════════════════════════════════════════════════════ */
+  #room {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 3;
+  }
+
+  .roomcode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: oklch(15% 0.012 275);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 130ms ease;
+  }
+  .roomcode:hover { border-color: var(--accent); }
+  .roomcode b { color: var(--accent-2); letter-spacing: 0.16em; font-weight: 700; }
+
+  .count { font-size: 0.8rem; color: var(--muted); }
+  .spacer { flex: 1; }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 8px var(--ok);
+  }
+
+  .stage {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    align-content: center;
+    justify-content: center;
+  }
+
+  .tile {
+    position: relative;
+    background: oklch(9% 0.01 275);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* a lone person should not own the whole window */
+  .grid[data-count="1"] .tile { max-width: min(880px, 100%); justify-self: center; }
+
+  .tile.sharing {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 26px oklch(66% 0.19 285 / 0.22);
+  }
+
+  .tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: oklch(9% 0.01 275);
+  }
+  .tile.sharing video { object-fit: contain; background: #000; }
+
+  .tile video.mirror { transform: scaleX(-1); }
+
+  .avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: oklch(13% 0.02 285);
+    user-select: none;
+  }
+
+  .nameplate {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: oklch(10% 0.01 275 / 0.82);
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    backdrop-filter: blur(6px);
+    max-width: calc(100% - 16px);
+  }
+
+  .nameplate span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--accent-2);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .mic-off {
+    color: var(--danger);
+    display: inline-flex;
+  }
+
+  /* chat */
+  .chat {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+  }
+  .chat.hidden { display: none; }
+
+  .chat-head {
+    padding: 12px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: oklch(30% 0.02 275) transparent;
+  }
+
+  .msg { font-size: 0.84rem; line-height: 1.5; word-wrap: break-word; }
+  .msg .who { font-weight: 600; color: var(--accent-2); margin-right: 6px; }
+  .msg.sys { color: var(--muted); font-style: italic; font-size: 0.78rem; }
+
+  .chat-form {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .chat-form input {
+    flex: 1;
+    padding: 10px 12px;
+    background: oklch(15% 0.012 275);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    min-width: 0;
+  }
+  .chat-form input:focus { border-color: var(--accent); }
+
+  /* control bar */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .ctl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 68px;
+    padding: 8px 4px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
+    transition: background 130ms ease, color 130ms ease;
+  }
+  .ctl:hover { background: oklch(24% 0.02 275); color: var(--text); }
+
+  .ctl .icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: oklch(23% 0.018 275);
+    border: 1px solid var(--border);
+    transition: background 130ms ease, border-color 130ms ease, color 130ms ease;
+  }
+  .ctl:hover .icon { border-color: oklch(40% 0.03 275); }
+
+  .ctl.on .icon {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: oklch(13% 0.02 285);
+  }
+  .ctl.on { color: var(--text); }
+
+  .ctl.danger .icon {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+  .ctl.danger { color: var(--danger); }
+
+  .ctl svg { width: 20px; height: 20px; }
+
+  .quality-wrap {
+    position: relative;
+  }
+
+  .menu {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 210px;
+    box-shadow: 0 16px 40px oklch(0% 0 0 / 0.6);
+    z-index: 5;
+  }
+
+  .menu button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: var(--text);
+    text-align: left;
+    font-size: 0.83rem;
+  }
+  .menu button:hover { background: oklch(27% 0.025 275); }
+  .menu button.active { background: oklch(30% 0.06 285); }
+  .menu small { color: var(--muted); font-size: 0.71rem; }
+
+  /* toast */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 92px;
+    transform: translateX(-50%) translateY(12px);
+    background: oklch(20% 0.02 275);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 0.83rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease;
+    z-index: 20;
+    max-width: 90vw;
+    text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 720px) {
+    .chat { width: 100%; position: absolute; inset: 49px 0 0; z-index: 4; }
+    .ctl { width: 58px; }
+    .ctl .icon { width: 38px; height: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══ -->
+<div id="home">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a4 4 0 00-4 4v5a4 4 0 008 0V6a4 4 0 00-4-4z"/>
+      <path d="M5 11a7 7 0 0014 0"/>
+      <path d="M12 18v4M8 22h8"/>
+    </svg>
+    <h1>РУПОР</h1>
+  </div>
+  <div class="tagline">видеовстречи напрямую между браузерами</div>
+
+  <div class="entry">
+    <label for="name">Ваше имя</label>
+    <input class="field" id="name" maxlength="24" placeholder="Как вас зовут?" autocomplete="off">
+
+    <button class="btn primary" id="btn-create">Создать комнату</button>
+
+    <div class="or">или</div>
+
+    <label for="code">Код комнаты</label>
+    <input class="field code" id="code" maxlength="6" placeholder="ABC123" autocomplete="off" spellcheck="false">
+    <button class="btn" id="btn-join">Войти по коду</button>
+
+    <button class="btn install" id="btn-install" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px">
+        <path d="M12 3v10M8 9l4 4 4-4"/>
+        <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+      </svg>
+      Установить приложение
+    </button>
+
+    <div class="err" id="err"></div>
+  </div>
+
+  <p class="fineprint">
+    Без регистрации, без подписок и лимитов.<br>
+    Видео и звук идут напрямую между участниками — сервер только знакомит вас.
+  </p>
+</div>
+
+<!-- ══ ROOM ══ -->
+<div id="room" class="hidden">
+  <div class="topbar">
+    <button class="roomcode" id="code-copy" title="Скопировать ссылку-приглашение">
+      <span class="dot"></span>
+      <span>комната</span>
+      <b id="room-code">------</b>
+    </button>
+    <div class="count" id="count">1 участник</div>
+    <div class="spacer"></div>
+    <button class="ctl" id="btn-chat-top" style="width:auto;flex-direction:row;gap:8px;padding:6px 10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      <span style="font-size:0.8rem">Чат</span>
+    </button>
+  </div>
+
+  <div class="stage">
+    <div class="grid" id="grid"></div>
+    <aside class="chat hidden" id="chat">
+      <div class="chat-head">Чат</div>
+      <div class="chat-log" id="chat-log"></div>
+      <form class="chat-form" id="chat-form">
+        <input id="chat-input" placeholder="Сообщение…" maxlength="500" autocomplete="off">
+        <button class="btn" type="submit" style="width:auto;padding:10px 14px">→</button>
+      </form>
+    </aside>
+  </div>
+
+  <div class="controls">
+    <button class="ctl" id="btn-mic" title="Микрофон">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 11a7 7 0 0014 0M12 18v3"/>
+        </svg>
+      </span>
+      Микрофон
+    </button>
+
+    <button class="ctl" id="btn-cam" title="Камера">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="14" height="12" rx="2"/>
+          <path d="M16 10l6-3v10l-6-3z"/>
+        </svg>
+      </span>
+      Камера
+    </button>
+
+    <button class="ctl" id="btn-share" title="Демонстрация экрана">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+          <path d="M12 13V7M9 10l3-3 3 3"/>
+        </svg>
+      </span>
+      Экран
+    </button>
+
+    <div class="quality-wrap">
+      <button class="ctl" id="btn-quality" title="Качество демонстрации">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17l5-6 4 4 3-3 6 5"/>
+            <path d="M3 21h18"/>
+          </svg>
+        </span>
+        Качество
+      </button>
+      <div class="menu hidden" id="quality-menu"></div>
+    </div>
+
+    <button class="ctl danger" id="btn-leave" title="Выйти">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <path d="M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      </span>
+      Выйти
+    </button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* Signalling transport for Рупор.
+
+   The PeerJS public cloud answers every request with a Cloudflare block
+   (HTTP 403).  An MQTT broker is a plain public relay: no account, no
+   quota, carrying only the small SDP blobs two browsers need to find each
+   other.  Video and audio travel directly between browsers and never
+   touch it.
+
+   A public relay drops frames, so the handshake is self-healing: offers
+   and answers are repeated until the peer connection reaches "connected",
+   a repeated offer always draws a repeated answer, and a failed peer
+   connection is redialled from scratch.
+
+   All signalling flows through a single broadcast topic per room.  Every
+   message carries a `to` field so the right peer picks it up; others
+   ignore it.  One subscription per room is simpler for the broker to
+   maintain than one per peer, which improves delivery reliability. */
+(function (global) {
+  'use strict';
+
+  const BROKERS = [
+    'wss://broker.emqx.io:8084/mqtt',
+    'wss://broker.hivemq.com:8884/mqtt',
+  ];
+  const ROOT = 'rupor/v3';
+  const ICE = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    // Public TURN relays.  They are unreachable from some filtered networks
+    // (this one rewrites DNS for openrelay.metered.ca and blocks TURN), but
+    // they work for most ordinary connections and cost nothing to try.
+    // A private relay can be added at runtime via `iceServers()` below.
+    { urls: 'turn:openrelay.metered.ca:80',   username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443',  username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  ];
+
+  const ICE_CAP = 1500;
+  const RETRY = [0, 1500, 3500, 6000, 9000];
+
+  // Extra ICE servers may be supplied at runtime without rebuilding the file:
+  //   localStorage.rup_ice = '[{"urls":"turn:1.2.3.4:80","username":"u","credential":"p"}]'
+  // Lets a blocked or expired relay be swapped from a browser console.
+  function iceServers() {
+    try {
+      const raw = global.localStorage && global.localStorage.getItem('rup_ice');
+      if (raw) {
+        const extra = JSON.parse(raw);
+        if (Array.isArray(extra)) return ICE.concat(extra);
+      }
+    } catch (_) {}
+    return ICE;
+  }
+
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  function hex(n) {
+    const b = new Uint8Array(n);
+    crypto.getRandomValues(b);
+    let s = '';
+    for (const x of b) s += x.toString(16).padStart(2, '0');
+    return s;
+  }
+
+  function varint(n) {
+    const out = [];
+    do {
+      let b = n % 128;
+      n = Math.floor(n / 128);
+      if (n) b |= 0x80;
+      out.push(b);
+    } while (n);
+    return out;
+  }
+
+  function packet(first, body) {
+    return new Uint8Array([first, ...varint(body.length), ...body]);
+  }
+
+  function utf8(s) {
+    return Array.from(enc.encode(s));
+  }
+
+  // Resolves when ICE gathering completes or the cap expires.  Sending a
+  // complete SDP removes the need for trickled candidates.
+  function waitIce(pc, cap) {
+    return new Promise((resolve) => {
+      if (pc.iceGatheringState === 'complete') return resolve();
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        pc.removeEventListener('icegatheringstatechange', check);
+        resolve();
+      };
+      const check = () => { if (pc.iceGatheringState === 'complete') finish(); };
+      const timer = setTimeout(finish, cap);
+      pc.addEventListener('icegatheringstatechange', check);
+    });
+  }
+
+  // ── minimal MQTT 3.1.1 client over WebSocket (QoS 0) ──────────────────────
+  class Mqtt {
+    constructor(hooks) {
+      this.hooks = hooks;
+      this.ws = null;
+      this.ready = false;
+      this.dead = false;
+      this.idx = 0;
+      this.cid = 'rup' + hex(6);
+      this.subs = new Set();
+      this.queue = [];
+      this.buf = new Uint8Array(0);
+      this.pingTimer = null;
+      this.retryTimer = null;
+      this.pid = 0;
+      this.everReady = false;
+      this.raw = [];
+    }
+
+    _log(what) {
+      this.raw.push(Date.now() % 1000000 + ' ' + what);
+      if (this.raw.length > 60) this.raw.shift();
+    }
+
+    start() { this._open(); }
+
+    _open() {
+      if (this.dead) return;
+      this.buf = new Uint8Array(0);
+      const url = BROKERS[this.idx % BROKERS.length];
+      let ws;
+      try { ws = new WebSocket(url, ['mqtt']); } catch (_) { this._retry(); return; }
+      ws.binaryType = 'arraybuffer';
+      this.ws = ws;
+
+      ws.onopen = () => {
+        this._log('open broker=' + this.idx);
+        // CONNECT: protocol "MQTT", level 4, clean session, 60 s keep-alive.
+        const idb = utf8(this.cid);
+        const body = [0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3c,
+                      0x00, idb.length, ...idb];
+        try { ws.send(packet(0x10, body)); } catch (_) {}
+      };
+
+      ws.onmessage = (ev) => {
+        const d = ev.data;
+        if (d instanceof ArrayBuffer) this._feed(new Uint8Array(d));
+        else if (d && d.buffer) this._feed(new Uint8Array(d.buffer));
+        else if (typeof d === 'string') this._feed(enc.encode(d));
+      };
+
+      ws.onclose = (e) => {
+        this._log('close ' + (e && e.code));
+        this.ready = false;
+        this._stopPing();
+        if (!this.dead) this._retry();
+      };
+
+      ws.onerror = () => {};
+    }
+
+    _retry() {
+      if (this.dead || this.retryTimer) return;
+      this.idx++;
+      this.retryTimer = setTimeout(() => {
+        this.retryTimer = null;
+        this._open();
+      }, 1500);
+    }
+
+    _feed(chunk) {
+      const merged = new Uint8Array(this.buf.length + chunk.length);
+      merged.set(this.buf);
+      merged.set(chunk, this.buf.length);
+      this.buf = merged;
+      for (;;) {
+        const p = this._next();
+        if (!p) break;
+        this._handle(p);
+        if (this.dead || !this.ws) break;
+      }
+    }
+
+    _next() {
+      const b = this.buf;
+      if (b.length < 2) return null;
+      let mul = 1, len = 0, i = 1, byte = 0;
+      do {
+        if (i >= b.length) return null;
+        byte = b[i++];
+        len += (byte & 0x7f) * mul;
+        mul *= 128;
+        if (i > 4) return null;
+      } while (byte & 0x80);
+      if (b.length < i + len) return null;
+      const out = { type: b[0] >> 4, body: b.slice(i, i + len) };
+      this.buf = b.slice(i + len);
+      return out;
+    }
+
+    _handle(p) {
+      const { type, body } = p;
+      if (type === 2) {                        // CONNACK
+        const rc = body.length > 1 ? body[1] : 1;
+        if (rc !== 0) { this._retry(); return; }
+        this.ready = true;
+        this._log('connack');
+        for (const topic of this.subs) this._sub(topic);
+        const queued = this.queue;
+        this.queue = [];
+        for (const fn of queued) { try { fn(); } catch (_) {} }
+        this._startPing();
+        const first = !this.everReady;
+        this.everReady = true;
+        if (this.hooks.onReady) this.hooks.onReady(first);
+        return;
+      }
+      if (type === 3) {                        // PUBLISH (QoS 0)
+        if (body.length < 2) return;
+        const tlen = (body[0] << 8) | body[1];
+        if (body.length < 2 + tlen) return;
+        const topic = dec.decode(body.subarray(2, 2 + tlen));
+        const payload = dec.decode(body.subarray(2 + tlen));
+        this._log('pub ' + topic.split('/').pop());
+        if (this.hooks.onMessage) this.hooks.onMessage(topic, payload);
+      }
+    }
+
+    subscribe(topic) {
+      this.subs.add(topic);
+      if (this.ready) this._sub(topic);
+    }
+
+    _sub(topic) {
+      const t = utf8(topic);
+      if (t.length > 250) return;
+      const id = ++this.pid;
+      // QoS 0 subscription — no PUBACK flow control to throttle delivery.
+      const body = [id >> 8, id & 0xff, 0x00, t.length, ...t, 0x00];
+      try { this.ws.send(packet(0x82, body)); } catch (_) {}
+    }
+
+    publish(topic, obj) {
+      const t = utf8(topic);
+      if (t.length > 250) return;
+      const body = [0x00, t.length, ...t, ...utf8(JSON.stringify(obj))];
+      const send = () => { try { this.ws.send(packet(0x30, body)); } catch (_) {} };
+      if (this.ready) send();
+      else { this.queue.push(send); if (this.queue.length > 8) this.queue.shift(); }
+    }
+
+    _startPing() {
+      this._stopPing();
+      this.pingTimer = setInterval(() => {
+        try { this.ws.send(new Uint8Array([0xc0, 0x00])); } catch (_) {}
+      }, 30000);
+    }
+
+    _stopPing() {
+      if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+    }
+
+    close() {
+      this.dead = true;
+      this._stopPing();
+      if (this.retryTimer) { clearTimeout(this.retryTimer); this.retryTimer = null; }
+      try { this.ws.send(new Uint8Array([0xe0, 0x00])); } catch (_) {}
+      try { this.ws.close(); } catch (_) {}
+    }
+  }
+
+  // ── connection objects ─────────────────────────────────────────────────────
+  class BaseConn {
+    constructor(peer, remoteId) {
+      this._peer = peer;
+      this.peer = remoteId;
+      this.sid = null;
+      this.kind = '';
+      this.pc = null;
+      this.closed = false;
+      this.open = false;
+      this.answerSdp = null;
+      this.failTimer = null;
+      this._h = Object.create(null);
+    }
+
+    on(ev, fn) {
+      (this._h[ev] || (this._h[ev] = [])).push(fn);
+      if (ev === 'open' && this.open) setTimeout(fn, 0);
+      return this;
+    }
+
+    _emit(ev, arg) {
+      const list = this._h[ev];
+      if (!list) return;
+      for (const fn of list.slice()) { try { fn(arg); } catch (e) { console.error(e); } }
+    }
+
+    close() {
+      if (this.closed) return;
+      this._peer._pub(this.peer, { t: 'bye', from: this._peer.id, sid: this.sid });
+      this._peer._drop(this);
+    }
+  }
+
+  class DataConn extends BaseConn {
+    constructor(peer, remoteId) {
+      super(peer, remoteId);
+      this.kind = 'data';
+      this.dc = null;
+    }
+    send(obj) {
+      if (!this.dc || this.dc.readyState !== 'open') return;
+      try { this.dc.send(JSON.stringify(obj)); } catch (_) {}
+    }
+  }
+
+  class MediaConn extends BaseConn {
+    constructor(peer, remoteId) {
+      super(peer, remoteId);
+      this.kind = 'media';
+      this.localStream = null;
+      this.remoteSdp = null;
+      this._started = false;
+      this._tries = 0;
+    }
+    get peerConnection() { return this.pc; }
+    answer(stream) { this.localStream = stream; this._start(); }
+    _start() {
+      if (this._started || !this.localStream || !this.remoteSdp || !this.pc) return;
+      this._started = true;
+      const pc = this.pc;
+      const stream = this.localStream;
+      (async () => {
+        try {
+          await pc.setRemoteDescription({ type: 'offer', sdp: this.remoteSdp });
+          for (const t of stream.getTracks()) { try { pc.addTrack(t, stream); } catch (_) {} }
+          const ans = await pc.createAnswer();
+          await pc.setLocalDescription(ans);
+          await waitIce(pc, ICE_CAP);
+          if (this.closed || this._peer.destroyed) return;
+          this.answerSdp = pc.localDescription.sdp;
+          this._peer._repeatAnswer(this);
+        } catch (_) { this._peer._drop(this); }
+      })();
+    }
+  }
+
+  // ── Peer ───────────────────────────────────────────────────────────────────
+  class Peer {
+    constructor(id, opts) {
+      this.id = String(id);
+      this.opts = opts || {};
+      this.room = (this.id.split('-')[1] || '').toUpperCase();
+      this.destroyed = false;
+      this._opened = false;
+
+      this.handlers = { open: [], connection: [], call: [], error: [] };
+      this._all = new Set();
+      this._bySid = new Map();
+      this._out = new Map();
+      this._trace = [];
+
+      if (typeof RTCPeerConnection !== 'function') {
+        setTimeout(() => this._emit('error', { type: 'browser-incompatible' }), 0);
+        return;
+      }
+
+      this.mqtt = new Mqtt({
+        onReady: (first) => this._onReady(first),
+        onMessage: (topic, payload) => this._onPayload(topic, payload),
+      });
+      this.mqtt.start();
+
+      // If neither public relay has answered by now, a room genuinely
+      // cannot be opened.  Saying so is more useful than blaming the
+      // user's connection.
+      this.relayTimer = setTimeout(() => {
+        if (this._opened || this.destroyed) return;
+        this._emit('error', { type: 'relay-down' });
+      }, 15000);
+    }
+
+    on(ev, fn) { if (this.handlers[ev]) this.handlers[ev].push(fn); return this; }
+
+    _emit(ev, arg) {
+      for (const fn of this.handlers[ev] || []) { try { fn(arg); } catch (e) { console.error(e); } }
+    }
+
+    _tr(kind, detail) {
+      this._trace.push({ t: Date.now() % 100000, kind, detail });
+      if (this._trace.length > 60) this._trace.shift();
+    }
+
+    // One broadcast topic per room — both peers subscribe to it.
+    topicFor() { return ROOT + '/' + this.room; }
+
+    // Send a signalling message through the WebRTC data channel when one is
+    // open.  A direct data channel is far more reliable than the public MQTT
+    // broker and bypasses it entirely.  Returns true when the message was sent.
+    _sendViaData(peerId, msg) {
+      for (const conn of this._all) {
+        if (conn.kind !== 'data' || conn.peer !== peerId) continue;
+        if (!conn.open || !conn.dc || conn.dc.readyState !== 'open') continue;
+        try {
+          conn.dc.send(JSON.stringify({ ...msg, __sig: true }));
+          return true;
+        } catch (_) {}
+      }
+      return false;
+    }
+
+    _pub(peerId, msg) {
+      if (this.destroyed) return;
+      const m = { ...msg, cid: this.mqtt.cid };
+      if (!m.to) m.to = peerId;
+      this._tr('pub', m.t + (m.kind ? '/' + m.kind : '') + ' to=' + (m.to || '').slice(-6) + ' sid=' + (m.sid || '').slice(0, 6));
+      // Prefer the data channel when open — it is a direct WebRTC connection
+      // and does not touch the unreliable public MQTT broker.
+      if (this._sendViaData(peerId, m)) return;
+      this.mqtt.publish(this.topicFor(), m);
+    }
+
+    // Handle a signalling message that arrived through a data channel.
+    // Skips the MQTT own-echo filter because data channels have no echoes.
+    _onDcSignal(m) {
+      if (!m || typeof m !== 'object') return;
+      this._tr('dc', (m.t || '?') + (m.kind ? '/' + m.kind : '') + ' sid=' + (m.sid || '').slice(0, 6));
+      if (m.t === 'offer') return this._inOffer(m);
+      if (m.t === 'answer') return this._inAnswer(m);
+      if (m.t === 'bye') return this._inBye(m);
+    }
+
+    _sendAnswer(conn) {
+      if (this.destroyed || conn.closed || !conn.answerSdp) return;
+      this._pub(conn.peer, { t: 'answer', from: this.id, sid: conn.sid, sdp: conn.answerSdp });
+    }
+
+    // Repeat the answer several times.  A public relay drops frames, so
+    // the caller may need more than one copy before one gets through.
+    _repeatAnswer(conn) {
+      for (const delay of RETRY) {
+        setTimeout(() => {
+          if (this.destroyed || conn.closed || !conn.answerSdp) return;
+          if (conn.pc && (conn.pc.connectionState === 'connected' || conn.pc.signalingState === 'stable')) return;
+          this._sendAnswer(conn);
+        }, delay);
+      }
+    }
+
+    _onReady(first) {
+      this.mqtt.subscribe(this.topicFor());
+      this._tr('ready', 'first=' + first);
+      if (this.relayTimer) { clearTimeout(this.relayTimer); this.relayTimer = null; }
+
+      if (!this._opened) {
+        this._opened = true;
+        this._emit('open', this.id);
+        return;
+      }
+
+      // The relay reconnected: anything that never reached "connected" may
+      // have lost its handshake in the gap, so announce it again.
+      for (const conn of Array.from(this._out.values())) {
+        if (conn.closed) continue;
+        if (conn.pc && conn.pc.connectionState === 'connected') continue;
+        this._offer(conn);
+      }
+      for (const conn of Array.from(this._all)) {
+        if (conn.closed || !conn.answerSdp) continue;
+        if (conn.pc && conn.pc.connectionState === 'connected') continue;
+        this._sendAnswer(conn);
+      }
+    }
+
+    _newPc() {
+      return new RTCPeerConnection({ iceServers: iceServers(), bundlePolicy: 'max-bundle' });
+    }
+
+    // ── dialling ─────────────────────────────────────────────────────────────
+    connect(peerId) {
+      const conn = new DataConn(this, String(peerId));
+      this._dial(conn, null);
+      return conn;
+    }
+
+    call(peerId, stream) {
+      const mc = new MediaConn(this, String(peerId));
+      this._dial(mc, stream);
+      return mc;
+    }
+
+    _dial(target, stream) {
+      target.sid = hex(6);
+      target.pc = this._newPc();
+      this._all.add(target);
+      this._bySid.set(target.sid, target);
+      this._out.set(target.peer + '|' + target.kind, target);
+
+      const pc = target.pc;
+
+      if (target.kind === 'data') {
+        this._bindDc(target, pc.createDataChannel('d', { ordered: true }));
+      } else {
+        this._wireTracks(target);
+        for (const t of stream.getTracks()) { try { pc.addTrack(t, stream); } catch (_) {} }
+      }
+
+      (async () => {
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          await waitIce(pc, ICE_CAP);
+          if (target.closed || this.destroyed) return;
+          this._offer(target);
+        } catch (_) { this._drop(target); }
+      })();
+    }
+
+    _offer(target) {
+      if (target.closed || this.destroyed || !target.pc || !target.pc.localDescription) return;
+      const msg = {
+        t: 'offer', kind: target.kind, from: this.id, to: target.peer,
+        sid: target.sid, sdp: target.pc.localDescription.sdp,
+      };
+
+      // Re-publishing covers an offer the relay dropped.  The remote side
+      // treats a repeat as "send your answer again", never as an error.
+      for (const delay of RETRY) {
+        setTimeout(() => {
+          if (target.closed || this.destroyed) return;
+          if (target.pc && (target.pc.connectionState === 'connected' || target.pc.signalingState === 'stable')) return;
+          this._pub(target.peer, msg);
+        }, delay);
+      }
+
+      // Only a failed data dial means "the room does not exist"; a failed
+      // media dial is a separate, non-fatal problem.
+      if (target.kind !== 'data') return;
+
+      if (target.failTimer) clearTimeout(target.failTimer);
+      target.failTimer = setTimeout(() => {
+        if (target.closed || this.destroyed) return;
+        this._drop(target);
+        this._emit('error', { type: 'peer-unavailable' });
+      }, 12000);
+    }
+
+    // ── receiving ────────────────────────────────────────────────────────────
+    _onPayload(topic, raw) {
+      let m;
+      try { m = JSON.parse(raw); } catch (_) { return; }
+      if (!m || typeof m !== 'object') return;
+      if (m.cid === this.mqtt.cid) return;          // our own echo
+
+      this._tr('recv', (m.t || '?') + (m.kind ? '/' + m.kind : '') + ' to=' + (m.to || '').slice(-6) + ' sid=' + (m.sid || '').slice(0, 6));
+
+      if (m.t === 'offer') return this._inOffer(m);
+      if (m.t === 'answer') return this._inAnswer(m);
+      if (m.t === 'bye') return this._inBye(m);
+    }
+
+    _inOffer(m) {
+      if (m.to !== this.id) return;
+
+      // A repeated offer means our answer never arrived.  Re-send the
+      // cached answer instead of ignoring the retry.
+      const known = this._bySid.get(m.sid);
+      if (known) {
+        if (known.answerSdp && !known.closed) this._sendAnswer(known);
+        return;
+      }
+
+      // Glare: both sides dialled at once.  The smaller sid wins on both
+      // sides, so exactly one connection survives each collision.
+      const mine = this._out.get(m.from + '|' + m.kind);
+      if (mine && mine.sid && mine.sid < m.sid) return;
+      if (mine) this._drop(mine);
+
+      const pc = this._newPc();
+
+      if (m.kind === 'data') {
+        const conn = new DataConn(this, m.from);
+        conn.sid = m.sid;
+        conn.pc = pc;
+        this._all.add(conn);
+        this._bySid.set(m.sid, conn);
+        pc.ondatachannel = (ev) => {
+          if (ev.channel.label === 'd') this._bindDc(conn, ev.channel);
+        };
+        this._emit('connection', conn);
+        this._answerData(conn, m.sdp);
+        return;
+      }
+
+      const mc = new MediaConn(this, m.from);
+      mc.sid = m.sid;
+      mc.pc = pc;
+      mc.remoteSdp = m.sdp;
+      this._wireTracks(mc);
+      this._all.add(mc);
+      this._bySid.set(m.sid, mc);
+      this._emit('call', mc);
+    }
+
+    async _answerData(conn, sdp) {
+      try {
+        await conn.pc.setRemoteDescription({ type: 'offer', sdp });
+        const ans = await conn.pc.createAnswer();
+        await conn.pc.setLocalDescription(ans);
+        await waitIce(conn.pc, ICE_CAP);
+        if (conn.closed || this.destroyed) return;
+        conn.answerSdp = conn.pc.localDescription.sdp;
+        this._repeatAnswer(conn);
+      } catch (_) { this._drop(conn); }
+    }
+
+    _inAnswer(m) {
+      if (m.to !== this.id) return;
+      const target = this._bySid.get(m.sid);
+      if (!target || target.closed || !target.pc) return;
+      if (target.pc.signalingState !== 'have-local-offer') return;
+      if (target.failTimer) { clearTimeout(target.failTimer); target.failTimer = null; }
+      this._tr('apply', 'sid=' + (m.sid || '').slice(0, 6));
+      target.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp })
+        .catch(() => this._drop(target));
+    }
+
+    _inBye(m) {
+      if (m.to !== this.id) return;
+      const target = this._bySid.get(m.sid);
+      if (target) this._drop(target);
+    }
+
+    _bindDc(conn, dc) {
+      conn.dc = dc;
+      dc.onopen = () => { conn.open = true; conn._emit('open'); };
+      dc.onclose = () => this._drop(conn);
+      dc.onerror = () => {};
+      dc.onmessage = (ev) => {
+        let d;
+        try { d = JSON.parse(ev.data); } catch (_) { return; }
+        conn._emit('data', d);
+      };
+      if (dc.readyState === 'open') {
+        conn.open = true;
+        setTimeout(() => conn._emit('open'), 0);
+      }
+    }
+
+    _wireTracks(mc) {
+      mc.remoteStream = new MediaStream();
+      mc.pc.ontrack = (ev) => {
+        try { mc.remoteStream.addTrack(ev.track); } catch (_) {}
+        mc._emit('stream', mc.remoteStream);
+      };
+      // A failed connection carries no usable state: redial from scratch.
+      mc.pc.onconnectionstatechange = () => {
+        if (mc.pc.connectionState !== 'failed') return;
+        if (mc.closed || this.destroyed) return;
+        this._redialMedia(mc);
+      };
+    }
+
+    _redialMedia(old) {
+      const remote = old.peer;
+      const stream = old.localStream;
+      const tries = (old._tries || 0) + 1;
+      this._drop(old);
+      if (tries > 3 || !stream) {
+        // Media never connected.  With no relay the usual cause is a symmetric
+        // NAT on both sides, so say so instead of failing silently.
+        this._emit('error', { type: 'media-failed', peer: remote });
+        return;
+      }
+      const mc = new MediaConn(this, remote);
+      mc._tries = tries;
+      this._dial(mc, stream);
+    }
+
+    _drop(target) {
+      if (!target || target.closed) return;
+      target.closed = true;
+      target.open = false;
+      this._all.delete(target);
+      if (target.sid) this._bySid.delete(target.sid);
+      const key = target.peer + '|' + target.kind;
+      if (this._out.get(key) === target) this._out.delete(key);
+      if (target.failTimer) { clearTimeout(target.failTimer); target.failTimer = null; }
+      try { target.dc && target.dc.close(); } catch (_) {}
+      try { target.pc && target.pc.close(); } catch (_) {}
+      target._emit('close');
+    }
+
+    destroy() {
+      this.destroyed = true;
+      if (this.relayTimer) { clearTimeout(this.relayTimer); this.relayTimer = null; }
+      try { this.mqtt.close(); } catch (_) {}
+      for (const t of Array.from(this._all)) this._drop(t);
+      this._all.clear();
+      this._bySid.clear();
+      this._out.clear();
+    }
+  }
+
+  global.Peer = Peer;
+})(window);
+</script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+
+  // ── QUALITY PRESETS ───────────────────────────────────────────────────────
+  // maxBitrate is per viewer in a mesh: N people => (N-1)x this number upstream.
+  const QUALITY = {
+    eco:    { label: 'Эконом',       hint: '720p · 30 fps · 1.2 Мбит/с', bitrate: 1200000,  fps: 30, w: 1280, h: 720  },
+    normal: { label: 'Баланс',       hint: '1080p · 30 fps · 3.5 Мбит/с', bitrate: 3500000,  fps: 30, w: 1920, h: 1080 },
+    demo:   { label: 'Демонстрация', hint: '1080p · 60 fps · 7 Мбит/с',   bitrate: 7000000,  fps: 60, w: 1920, h: 1080 },
+  };
+  let qualityKey = 'demo';
+
+  // ── STATE ─────────────────────────────────────────────────────────────────
+  let peer = null;
+  let isHost = false;
+  let roomCode = '';
+  let myName = '';
+  let myId = '';
+
+  const conns   = new Map();   // peerId -> DataConnection
+  const calls   = new Map();   // peerId -> MediaConnection
+  const remotes = new Map();   // peerId -> { name, el, video, sharing, mic }
+
+  let micStream = null;
+  let camStream = null;
+  let screenStream = null;
+  let micOn = false;
+  let camOn = false;
+  let sharing = false;
+
+  let silentTrack = null;
+  let blackTrack = null;
+  let mixCtx = null;
+  let mixDest = null;
+  let mixTrack = null;
+
+  const usedNames = new Set();
+
+  const COLORS = [
+    'oklch(78% 0.15 285)', 'oklch(78% 0.14 200)', 'oklch(80% 0.15 150)',
+    'oklch(82% 0.14 80)',  'oklch(78% 0.15 30)',  'oklch(76% 0.14 330)',
+  ];
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  function makeCode(n) {
+    let s = '';
+    const buf = new Uint32Array(n);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < n; i++) s += CHARS[buf[i] % CHARS.length];
+    return s;
+  }
+
+  function randSuffix(n) {
+    let s = '';
+    const buf = new Uint32Array(n);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < n; i++) s += 'abcdefghijklmnopqrstuvwxyz0123456789'[buf[i] % 36];
+    return s;
+  }
+
+  function colorFor(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+    return COLORS[Math.abs(h) % COLORS.length];
+  }
+
+  function initials(name) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  let toastTimer = null;
+  function toast(text) {
+    const el = $('#toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function setErr(text) { $('#err').textContent = text || ''; }
+
+  function normalizeName(raw) {
+    let base = (raw || '').trim().replace(/\s+/g, ' ').slice(0, 24) || 'Гость';
+    let name = base;
+    let n = 2;
+    while (usedNames.has(name.toLowerCase())) name = `${base} ${n++}`;
+    usedNames.add(name.toLowerCase());
+    return name;
+  }
+
+  // ── OUTBOUND MEDIA ────────────────────────────────────────────────────────
+  // Every peer connection always carries exactly one audio and one video
+  // track, so replaceTrack() can swap sources at any time without a
+  // renegotiation.
+
+  function getSilentTrack() {
+    if (silentTrack) return silentTrack;
+    try {
+      if (!mixCtx) mixCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = mixCtx.createOscillator();
+      const gain = mixCtx.createGain();
+      const dest = mixCtx.createMediaStreamDestination();
+      gain.gain.value = 0;
+      osc.connect(gain).connect(dest);
+      osc.start();
+      silentTrack = dest.stream.getAudioTracks()[0];
+    } catch (_) {
+      silentTrack = null;
+    }
+    return silentTrack;
+  }
+
+  function getBlackTrack() {
+    if (blackTrack) return blackTrack;
+    const cv = document.createElement('canvas');
+    cv.width = 2; cv.height = 2;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#0a0a0e';
+    g.fillRect(0, 0, 2, 2);
+    blackTrack = cv.captureStream(1).getVideoTracks()[0];
+    return blackTrack;
+  }
+
+  function micAudioTrack() {
+    return micOn && micStream ? micStream.getAudioTracks()[0] || null : null;
+  }
+
+  function screenAudioTrack() {
+    return sharing && screenStream ? screenStream.getAudioTracks()[0] || null : null;
+  }
+
+  // Mixes microphone and system audio into a single track.
+  let mixSources = null;   // { mic, scr } tracks currently feeding the mixer
+
+  function desiredAudioTrack() {
+    const mic = micAudioTrack();
+    const scr = screenAudioTrack();
+
+    if (!mic && !scr) {
+      if (!mixTrack) teardownMix();
+      return getSilentTrack();
+    }
+
+    // Nothing to mix — hand over the raw track so it stays untouched.
+    if (!mic || !scr) {
+      teardownMix();
+      return mic || scr;
+    }
+
+    try {
+      if (!mixCtx) mixCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (mixCtx.state === 'suspended') mixCtx.resume().catch(() => {});
+
+      if (mixSources && mixSources.mic === mic && mixSources.scr === scr && mixTrack) {
+        return mixTrack;
+      }
+
+      teardownMix();
+      mixDest = mixCtx.createMediaStreamDestination();
+      mixCtx.createMediaStreamSource(new MediaStream([mic])).connect(mixDest);
+      mixCtx.createMediaStreamSource(new MediaStream([scr])).connect(mixDest);
+      mixTrack = mixDest.stream.getAudioTracks()[0];
+      mixSources = { mic, scr };
+      return mixTrack;
+    } catch (_) {
+      return mic;
+    }
+  }
+
+  function teardownMix() {
+    mixSources = null;
+    mixTrack = null;
+    mixDest = null;
+  }
+
+  function desiredVideoTrack() {
+    if (sharing && screenStream) {
+      const t = screenStream.getVideoTracks()[0];
+      if (t) return t;
+    }
+    if (camOn && camStream) {
+      const t = camStream.getVideoTracks()[0];
+      if (t) return t;
+    }
+    return getBlackTrack();
+  }
+
+  function buildOutbound() {
+    const tracks = [];
+    const a = desiredAudioTrack();
+    const v = desiredVideoTrack();
+    if (a) tracks.push(a);
+    if (v) tracks.push(v);
+    return new MediaStream(tracks);
+  }
+
+  // Swap tracks into every live connection and re-tune the encoder.
+  // Also fills in a sender that is missing entirely — this happens when the
+  // first call went out before the microphone or a silent track existed.
+  function refreshOutbound() {
+    const a = desiredAudioTrack();
+    const v = desiredVideoTrack();
+
+    for (const mc of calls.values()) {
+      const pc = mc.peerConnection;
+      if (!pc) continue;
+
+      let haveAudio = false, haveVideo = false;
+      for (const sender of pc.getSenders()) {
+        if (!sender.track) continue;
+        if (sender.track.kind === 'audio') {
+          haveAudio = true;
+          if (a) sender.replaceTrack(a).catch(() => {});
+        } else if (sender.track.kind === 'video') {
+          haveVideo = true;
+          if (v) {
+            sender.replaceTrack(v).catch(() => {});
+            tuneVideoSender(sender);
+          }
+        }
+      }
+
+      const stream = new MediaStream();
+      const add = [];
+      if (!haveAudio && a) add.push(a);
+      if (!haveVideo && v) add.push(v);
+      if (add.length) {
+        try {
+          for (const t of add) pc.addTrack(t, stream);
+        } catch (_) {}
+      }
+    }
+  }
+
+  function tuneVideoSender(sender) {
+    const q = QUALITY[qualityKey];
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+      params.encodings[0].maxBitrate = q.bitrate;
+      params.encodings[0].maxFramerate = q.fps;
+      params.degradationPreference = 'maintain-resolution';
+      sender.setParameters(params).catch(() => {});
+    } catch (_) {}
+  }
+
+  function tuneAll() {
+    for (const mc of calls.values()) {
+      const pc = mc.peerConnection;
+      if (!pc) continue;
+      for (const s of pc.getSenders()) {
+        if (s.track && s.track.kind === 'video') tuneVideoSender(s);
+      }
+    }
+  }
+
+  // ── LOCAL TILE ────────────────────────────────────────────────────────────
+  let localTile = null;
+  let localVideo = null;
+  let localAvatar = null;
+
+  function buildLocalTile() {
+    const el = document.createElement('div');
+    el.className = 'tile';
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    video.style.display = 'none';
+    el.appendChild(video);
+
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.textContent = initials(myName);
+    av.style.background = colorFor(myId);
+    el.appendChild(av);
+
+    const plate = document.createElement('div');
+    plate.className = 'nameplate';
+    const label = document.createElement('span');
+    label.textContent = myName;
+    plate.appendChild(label);
+    el.appendChild(plate);
+
+    localTile = el;
+    localVideo = video;
+    localAvatar = av;
+    $('#grid').appendChild(el);
+    updateLocalPreview();
+  }
+
+  function updateLocalPreview() {
+    if (!localVideo) return;
+    let stream = null;
+    if (sharing && screenStream) stream = screenStream;
+    else if (camOn && camStream) stream = camStream;
+
+    if (stream) {
+      if (localVideo.srcObject !== stream) localVideo.srcObject = stream;
+      localVideo.style.display = 'block';
+      localVideo.classList.toggle('mirror', !sharing);
+      localAvatar.style.display = 'none';
+    } else {
+      localVideo.style.display = 'none';
+      localAvatar.style.display = 'flex';
+    }
+    if (localTile) {
+      localTile.classList.toggle('sharing', sharing);
+    }
+    // mic indicator
+    const plate = localTile && localTile.querySelector('.nameplate');
+    if (plate) {
+      const span = plate.querySelector('span');
+      if (span) span.textContent = myName;
+      let mark = plate.querySelector('.mic-off');
+      if (!micOn) {
+        if (!mark) {
+          mark = document.createElement('span');
+          mark.className = 'mic-off';
+          mark.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M9 9v3a3 3 0 004.5 2.6"/><path d="M15 9V6a3 3 0 00-5.6-1.5"/></svg>';
+          plate.insertBefore(mark, span.nextSibling);
+        }
+      } else if (mark) {
+        mark.remove();
+      }
+    }
+  }
+
+  // ── REMOTE TILES ──────────────────────────────────────────────────────────
+  function ensureRemote(id, name) {
+    let r = remotes.get(id);
+    if (r) {
+      if (name && r.name !== name) { r.name = name; renderRemoteName(r); }
+      return r;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'tile';
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;              // sound comes from the separate <audio>
+    el.appendChild(video);
+
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.textContent = initials(name || '??');
+    av.style.background = colorFor(id);
+    el.appendChild(av);
+
+    const plate = document.createElement('div');
+    plate.className = 'nameplate';
+    const span = document.createElement('span');
+    span.textContent = name || 'Участник';
+    plate.appendChild(span);
+    el.appendChild(plate);
+
+    $('#grid').appendChild(el);
+
+    r = { id, name: name || 'Участник', el, video, av, plate, span, sharing: false, mic: true, stream: null };
+    remotes.set(id, r);
+    renderCount();
+    return r;
+  }
+
+  function renderRemoteName(r) {
+    r.span.textContent = r.name;
+    r.av.textContent = initials(r.name);
+  }
+
+  function attachRemoteStream(id, stream, name) {
+    const r = ensureRemote(id, name);
+    r.stream = stream;
+    if (r.video.srcObject !== stream) r.video.srcObject = stream;
+    r.video.play().catch(() => {});
+
+    // Audio lives in its own element: the tile is muted so local playback
+    // is never needed, and the separate element keeps the browser happy.
+    if (!r.audio) {
+      const au = document.createElement('audio');
+      au.autoplay = true;
+      au.style.display = 'none';
+      r.el.appendChild(au);
+      r.audio = au;
+    }
+    if (r.audio.srcObject !== stream) r.audio.srcObject = stream;
+    r.audio.play().catch(() => {
+      // Autoplay was blocked — retry on the next click anywhere.
+      const retry = () => { r.audio.play().catch(() => {}); };
+      document.addEventListener('click', retry, { once: true });
+    });
+
+    updateRemoteVisual(r);
+  }
+
+  function updateRemoteVisual(r) {
+    const hasVideo = r.stream && r.stream.getVideoTracks().some(t => t.readyState === 'live') && (r.sharing || r.camOn !== false);
+    // A remote always sends a video track (black placeholder when idle),
+    // so show the element; the sharing flag only changes the framing.
+    r.el.classList.toggle('sharing', !!r.sharing);
+    r.av.style.display = 'none';
+    r.video.style.display = 'block';
+
+    let mark = r.plate.querySelector('.mic-off');
+    if (r.mic === false) {
+      if (!mark) {
+        mark = document.createElement('span');
+        mark.className = 'mic-off';
+        mark.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M9 9v3a3 3 0 004.5 2.6"/><path d="M15 9V6a3 3 0 00-5.6-1.5"/></svg>';
+        r.plate.appendChild(mark);
+      }
+    } else if (mark) {
+      mark.remove();
+    }
+
+    let badge = r.plate.querySelector('.badge');
+    if (r.sharing) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = 'демонстрация';
+        r.plate.appendChild(badge);
+      }
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
+  function removeRemote(id) {
+    const r = remotes.get(id);
+    if (r) {
+      r.el.remove();
+      remotes.delete(id);
+      renderCount();
+      addChat(null, `${r.name} покинул(а) комнату`);
+    }
+    const c = conns.get(id);
+    if (c) { try { c.close(); } catch (_) {} conns.delete(id); }
+    const mc = calls.get(id);
+    if (mc) { try { mc.close(); } catch (_) {} calls.delete(id); }
+  }
+
+  function renderCount() {
+    const n = remotes.size + (localTile ? 1 : 0);
+    const word = n % 10 === 1 && n % 100 !== 11 ? 'участник'
+               : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'участника'
+               : 'участников';
+    $('#count').textContent = `${n} ${word}`;
+
+    // Column count so tiles keep a sane size instead of stretching.
+    const grid = $('#grid');
+    let cols = 1;
+    if (n === 2) cols = 2;
+    else if (n === 3 || n === 4) cols = 2;
+    else if (n > 4) cols = Math.min(3, Math.ceil(Math.sqrt(n)));
+
+    // keep it to one row when everyone fits
+    grid.style.setProperty('--cols', String(cols));
+    grid.dataset.count = String(n);
+  }
+
+  // ── CHAT ──────────────────────────────────────────────────────────────────
+  function addChat(name, text) {
+    const log = $('#chat-log');
+    const el = document.createElement('div');
+    el.className = 'msg' + (name ? '' : ' sys');
+    if (name) {
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = name;
+      el.appendChild(who);
+      el.appendChild(document.createTextNode(text));
+    } else {
+      el.textContent = text;
+    }
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function send(msg) {
+    for (const c of conns.values()) {
+      if (c.open) { try { c.send(msg); } catch (_) {} }
+    }
+  }
+
+  // ── CONNECTIONS ───────────────────────────────────────────────────────────
+  // Media is dialled by exactly one side of each pair: the peer whose id sorts
+  // lower. Both sides run the same rule, so there is never a double call and
+  // never a pair with no call at all.
+
+  const dialing = new Set();     // data connections currently being opened
+
+  function iDial(otherId) {
+    return myId < otherId;
+  }
+
+  function ensurePair(remoteId) {
+    if (!remoteId || remoteId === myId) return;
+
+    // Data: either side may open it, but never twice for the same peer.
+    if (!conns.has(remoteId) && !dialing.has(remoteId)) {
+      dialing.add(remoteId);
+      connectTo(remoteId);
+    }
+
+    // Media: both sides dial; the signalling layer's glare handling keeps
+    // exactly one connection per pair when offers collide.
+    if (!calls.has(remoteId)) callPeer(remoteId);
+  }
+
+  function wireConn(conn) {
+    conn.on('open', () => {
+      conns.set(conn.peer, conn);
+      dialing.delete(conn.peer);
+      conn.send({ t: 'hello', name: myName });
+      if (!calls.has(conn.peer)) callPeer(conn.peer);
+    });
+
+    conn.on('data', (d) => {
+      if (!d || typeof d !== 'object') return;
+
+      // Signalling messages piggybacked on the data channel.  Using a direct
+      // WebRTC data channel bypasses the unreliable public MQTT broker for the
+      // media handshake.
+      if (d.__sig) { peer._onDcSignal(d); return; }
+
+      if (d.t === 'hello') {
+        ensureRemote(conn.peer, d.name);
+        ensurePair(conn.peer);
+        return;
+      }
+      if (d.t === 'chat') {
+        addChat(d.name || 'Участник', String(d.text || '').slice(0, 500));
+        return;
+      }
+      if (d.t === 'state') {
+        const r = ensureRemote(conn.peer, d.name);
+        if (typeof d.mic === 'boolean') r.mic = d.mic;
+        if (typeof d.cam === 'boolean') r.camOn = d.cam;
+        if (typeof d.sharing === 'boolean') r.sharing = d.sharing;
+        updateRemoteVisual(r);
+        return;
+      }
+      if (d.t === 'roster' && Array.isArray(d.peers)) {
+        for (const p of d.peers) {
+          if (p.id === myId) continue;
+          ensureRemote(p.id, p.name);
+          ensurePair(p.id);
+        }
+        return;
+      }
+      if (d.t === 'joined') {
+        ensureRemote(d.id, d.name);
+        ensurePair(d.id);
+        return;
+      }
+      if (d.t === 'bye') {
+        removeRemote(conn.peer);
+        return;
+      }
+    });
+
+    conn.on('close', () => {
+      if (conns.get(conn.peer) === conn) conns.delete(conn.peer);
+      dialing.delete(conn.peer);
+    });
+
+    conn.on('error', () => {});
+  }
+
+  function connectTo(id) {
+    if (id === myId || conns.has(id)) return;
+    try {
+      const c = peer.connect(id, { reliable: true });
+      wireConn(c);
+    } catch (_) {
+      dialing.delete(id);
+    }
+  }
+
+  function callPeer(id) {
+    if (id === myId || calls.has(id)) return;
+    try {
+      const mc = peer.call(id, buildOutbound());
+      setupCall(mc);
+    } catch (_) {}
+  }
+
+  function setupCall(mc) {
+    calls.set(mc.peer, mc);
+
+    mc.on('stream', (stream) => {
+      attachRemoteStream(mc.peer, stream);
+    });
+
+    mc.on('close', () => {
+      if (calls.get(mc.peer) === mc) calls.delete(mc.peer);
+    });
+
+    mc.on('error', () => {});
+
+    // Bitrate can only be raised once the sender exists.
+    const apply = () => {
+      const pc = mc.peerConnection;
+      if (!pc) return;
+      for (const s of pc.getSenders()) {
+        if (s.track && s.track.kind === 'video') tuneVideoSender(s);
+      }
+    };
+    setTimeout(apply, 500);
+    setTimeout(apply, 2000);
+  }
+
+  // ── ROOM LIFECYCLE ────────────────────────────────────────────────────────
+  function enterRoom(code, host) {
+    roomCode = code;
+    isHost = host;
+
+    $('#home').classList.add('hidden');
+    $('#room').classList.remove('hidden');
+    $('#room-code').textContent = code;
+
+    buildLocalTile();
+    renderCount();
+    addChat(null, 'Вы в комнате. Включите микрофон или начните демонстрацию экрана.');
+
+    if (host) {
+      // host is already open — nothing to dial
+    }
+  }
+
+  function startPeer(code, host) {
+    myId = host ? `rp-${code}-host` : `rp-${code}-${randSuffix(8)}`;
+
+    peer = new Peer(myId, {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478' },
+        ],
+      },
+    });
+
+    peer.on('open', () => {
+      enterRoom(code, host);
+
+      if (!host) {
+        const hostId = `rp-${code}-host`;
+        const c = peer.connect(hostId, { reliable: true });
+        wireConn(c);
+      }
+    });
+
+    peer.on('connection', (c) => {
+      wireConn(c);
+      // Every participant, host or not, tells the room who it is and shares
+      // its roster, so a mesh forms even when people join after the first pair.
+      c.on('open', () => {
+        const peers = [];
+        for (const [id] of conns) {
+          if (id === c.peer) continue;
+          peers.push({ id, name: (remotes.get(id) || {}).name || 'Участник' });
+        }
+        try { c.send({ t: 'roster', peers }); } catch (_) {}
+      });
+      c.on('data', (d) => {
+        if (!d || d.t !== 'hello') return;
+        for (const other of conns.values()) {
+          if (other.peer === c.peer || !other.open) continue;
+          try { other.send({ t: 'joined', id: c.peer, name: d.name }); } catch (_) {}
+        }
+      });
+    });
+
+    peer.on('call', (mc) => {
+      try {
+        mc.answer(buildOutbound());
+        setupCall(mc);
+      } catch (_) {}
+    });
+
+    peer.on('error', (e) => {
+      const type = e && e.type;
+
+      if (type === 'unavailable-id') {
+        setErr('Эта комната уже существует. Попробуйте другой код.');
+        cleanupPeer();
+        return;
+      }
+      if (type === 'peer-unavailable') {
+        if (!isHost) {
+          setErr('Комната не найдена. Проверьте код.');
+          leaveRoom(true);
+        }
+        return;
+      }
+      if (type === 'relay-down') {
+        setErr('Не удалось связаться с сервером знакомств. Ваш интернет тут ни при чём — недоступен публичный посредник. Попробуйте через минуту.');
+        return;
+      }
+      if (type === 'browser-incompatible') {
+        setErr('Браузер не поддерживает WebRTC. Попробуйте Chrome или Firefox.');
+        return;
+      }
+      if (type === 'media-failed') {
+        setErr('Не удалось установить прямой канал. Сеть не пропускает соединение — попробуйте другую сеть (например, мобильный интернет или наоборот Wi-Fi).');
+        return;
+      }
+    });
+  }
+
+  function cleanupPeer() {
+    if (peer) {
+      try { peer.destroy(); } catch (_) {}
+      peer = null;
+    }
+  }
+
+  function leaveRoom(silent) {
+    send({ t: 'bye' });
+    for (const id of Array.from(conns.keys())) removeRemote(id);
+    for (const mc of calls.values()) { try { mc.close(); } catch (_) {} }
+    calls.clear();
+    conns.clear();
+    remotes.clear();
+    usedNames.clear();
+
+    stopMic(); stopCam(); stopShare();
+    teardownMix();
+
+    cleanupPeer();
+
+    if (localTile) { localTile.remove(); localTile = null; localVideo = null; localAvatar = null; }
+    $('#grid').innerHTML = '';
+    $('#chat-log').innerHTML = '';
+    $('#room').classList.add('hidden');
+    $('#home').classList.remove('hidden');
+    $('#chat').classList.add('hidden');
+
+    if (!silent) {
+      setErr('');
+      // drop the room from the URL
+      if (location.search) history.replaceState(null, '', location.pathname);
+    }
+  }
+
+  // ── MEDIA TOGGLES ─────────────────────────────────────────────────────────
+  async function startMic() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      micOn = true;
+      $('#btn-mic').classList.add('on');
+      refreshOutbound();
+      broadcastState();
+      updateLocalPreview();
+    } catch (e) {
+      toast('Нет доступа к микрофону');
+      micOn = false;
+      $('#btn-mic').classList.remove('on');
+    }
+  }
+
+  function stopMic() {
+    if (micStream) {
+      micStream.getTracks().forEach(t => t.stop());
+      micStream = null;
+    }
+    micOn = false;
+    $('#btn-mic').classList.remove('on');
+    refreshOutbound();
+    broadcastState();
+    updateLocalPreview();
+  }
+
+  async function startCam() {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      });
+      camOn = true;
+      $('#btn-cam').classList.add('on');
+      refreshOutbound();
+      broadcastState();
+      updateLocalPreview();
+    } catch (e) {
+      toast('Нет доступа к камере');
+      camOn = false;
+      $('#btn-cam').classList.remove('on');
+    }
+  }
+
+  function stopCam() {
+    if (camStream) {
+      camStream.getTracks().forEach(t => t.stop());
+      camStream = null;
+    }
+    camOn = false;
+    $('#btn-cam').classList.remove('on');
+    refreshOutbound();
+    broadcastState();
+    updateLocalPreview();
+  }
+
+  async function startShare() {
+    const q = QUALITY[qualityKey];
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          width: { ideal: q.w, max: q.w },
+          height: { ideal: q.h, max: q.h },
+          frameRate: { ideal: q.fps, max: q.fps },
+        },
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+        systemAudio: 'include',
+        selfBrowserSurface: 'exclude',
+        surfaceSwitching: 'include',
+      });
+    } catch (e) {
+      if (e && e.name === 'NotAllowedError') return;
+      toast('Не удалось начать демонстрацию');
+      return;
+    }
+
+    // Keep text sharp when the shared window is a document or code editor.
+    const vt = screenStream.getVideoTracks()[0];
+    if (vt) {
+      try { vt.contentHint = 'detail'; } catch (_) {}
+      vt.addEventListener('ended', () => stopShare());
+    }
+
+    sharing = true;
+    $('#btn-share').classList.add('on');
+    refreshOutbound();
+    tuneAll();
+    broadcastState();
+    updateLocalPreview();
+    toast('Демонстрация началась');
+  }
+
+  function stopShare() {
+    if (screenStream) {
+      screenStream.getTracks().forEach(t => t.stop());
+      screenStream = null;
+    }
+    sharing = false;
+    $('#btn-share').classList.remove('on');
+    refreshOutbound();
+    broadcastState();
+    updateLocalPreview();
+  }
+
+  function broadcastState() {
+    send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing });
+  }
+
+  // ── UI WIRING ─────────────────────────────────────────────────────────────
+  function readName() {
+    const v = $('#name').value.trim();
+    return v || 'Гость';
+  }
+
+  $('#btn-create').addEventListener('click', () => {
+    setErr('');
+    myName = normalizeName(readName());
+    const code = makeCode(6);
+    startPeer(code, true);
+  });
+
+  $('#btn-join').addEventListener('click', () => {
+    setErr('');
+    const code = $('#code').value.trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) {
+      setErr('Код состоит из 6 символов: буквы и цифры.');
+      return;
+    }
+    myName = normalizeName(readName());
+    startPeer(code, false);
+  });
+
+  $('#code').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  });
+
+  $('#code').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('#btn-join').click();
+  });
+
+  $('#name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const code = $('#code').value.trim();
+      if (code) $('#btn-join').click();
+      else $('#btn-create').click();
+    }
+  });
+
+  // copy invite link
+  $('#code-copy').addEventListener('click', () => {
+    const url = `${location.origin}${location.pathname}?room=${roomCode}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast('Ссылка-приглашение скопирована'),
+      () => toast(`Код комнаты: ${roomCode}`)
+    );
+  });
+
+  // mic / cam / share
+  $('#btn-mic').addEventListener('click', () => { micOn ? stopMic() : startMic(); });
+  $('#btn-cam').addEventListener('click', () => { camOn ? stopCam() : startCam(); });
+  $('#btn-share').addEventListener('click', () => { sharing ? stopShare() : startShare(); });
+
+  $('#btn-leave').addEventListener('click', () => leaveRoom(false));
+
+  // chat
+  const toggleChat = () => $('#chat').classList.toggle('hidden');
+  $('#btn-chat-top').addEventListener('click', toggleChat);
+
+  $('#chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addChat(myName, text);
+    send({ t: 'chat', name: myName, text });
+  });
+
+  // quality menu
+  const qMenu = $('#quality-menu');
+  function renderQualityMenu() {
+    qMenu.innerHTML = '';
+    for (const [key, q] of Object.entries(QUALITY)) {
+      const b = document.createElement('button');
+      b.className = key === qualityKey ? 'active' : '';
+      b.innerHTML = `<span>${q.label}</span><small>${q.hint}</small>`;
+      b.addEventListener('click', async () => {
+        qualityKey = key;
+        qMenu.classList.add('hidden');
+        renderQualityMenu();
+        applyQuality();
+      });
+      qMenu.appendChild(b);
+    }
+  }
+
+  async function applyQuality() {
+    const q = QUALITY[qualityKey];
+    tuneAll();
+
+    // Re-capture the screen at the new resolution / frame rate while sharing.
+    if (sharing && screenStream) {
+      const old = screenStream;
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { ideal: q.w, max: q.w },
+            height: { ideal: q.h, max: q.h },
+            frameRate: { ideal: q.fps, max: q.fps },
+          },
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+          systemAudio: 'include',
+          selfBrowserSurface: 'exclude',
+          surfaceSwitching: 'include',
+        });
+        const vt = screenStream.getVideoTracks()[0];
+        if (vt) {
+          try { vt.contentHint = 'detail'; } catch (_) {}
+          vt.addEventListener('ended', () => stopShare());
+        }
+        old.getTracks().forEach(t => t.stop());
+        refreshOutbound();
+        tuneAll();
+        updateLocalPreview();
+        toast(`Качество: ${q.label}`);
+      } catch (_) {
+        screenStream = old;
+      }
+    } else {
+      toast(`Качество: ${q.label}`);
+    }
+  }
+
+  $('#btn-quality').addEventListener('click', () => {
+    qMenu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!qMenu.classList.contains('hidden') && !e.target.closest('.quality-wrap')) {
+      qMenu.classList.add('hidden');
+    }
+  });
+
+  renderQualityMenu();
+
+  // ── JOIN VIA LINK ─────────────────────────────────────────────────────────
+  const params = new URLSearchParams(location.search);
+  const invite = (params.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (invite) {
+    $('#code').value = invite;
+    document.title = `Вход в комнату ${invite} — Рупор`;
+  }
+
+  window.addEventListener('beforeunload', () => {
+    send({ t: 'bye' });
+  });
+
+  // Expose a tiny hook for smoke tests.
+  window.__rup = {
+    get state() { return { roomCode, isHost, myId, peers: remotes.size, micOn, camOn, sharing }; },
+    qualityKey: () => qualityKey,
+    QUALITY,
+    makeCode,
+    normalizeName,
+    initials,
+    debug: () => [...calls.entries()].map(([id, mc]) => {
+      const pc = mc.peerConnection;
+      return {
+        id,
+        hasPc: !!pc,
+        conn: pc ? pc.connectionState : null,
+        sig: pc ? pc.signalingState : null,
+        ice: pc ? pc.iceConnectionState : null,
+        senders: pc ? pc.getSenders().filter(s => s.track).map(s => s.track.kind) : [],
+        receivers: pc ? pc.getReceivers().filter(r => r.track).map(r => r.track.kind + ':' + r.track.readyState) : [],
+      };
+    }),
+    peerRef: () => peer,
+    trace: () => (peer && peer._trace ? peer._trace : []),
+    raw: () => (peer && peer.mqtt && peer.mqtt.raw ? peer.mqtt.raw : []),
+  };
+
+  // ── INSTALLABLE APP ───────────────────────────────────────────────────────
+  // A service worker plus manifest make the page installable as a real app:
+  // its own icon, its own window, no address bar.  Registration is skipped on
+  // file:// where service workers are not available.
+  // One worker owns scope "/" for the whole site, so this registers the shared
+  // sw.js rather than a second worker that would evict it.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  let installEvent = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installEvent = e;
+    const btn = document.getElementById('btn-install');
+    if (btn) btn.hidden = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installEvent = null;
+    const btn = document.getElementById('btn-install');
+    if (btn) btn.hidden = true;
+  });
+
+  (function wireInstall() {
+    const btn = document.getElementById('btn-install');
+    if (!btn) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) { btn.hidden = true; return; }
+    btn.addEventListener('click', async () => {
+      if (installEvent) {
+        installEvent.prompt();
+        const r = await installEvent.userChoice.catch(() => null);
+        if (r && r.outcome === 'accepted') btn.hidden = true;
+        installEvent = null;
+        return;
+      }
+      toast('Меню браузера → «Установить приложение»');
+    });
+  })();
+})();
+</script>
+</body>
+</html>

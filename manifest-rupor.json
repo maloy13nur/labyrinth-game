@@ -1,0 +1,32 @@
+{
+  "name": "Рупор — видеовстречи",
+  "short_name": "Рупор",
+  "description": "Видеовстречи, голосовая связь и демонстрация экрана прямо из браузера. Без регистрации и без серверов.",
+  "id": "./rupor.html",
+  "start_url": "./rupor.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#0d0b14",
+  "theme_color": "#0d0b14",
+  "orientation": "any",
+  "lang": "ru",
+  "categories": ["social", "productivity", "utilities"],
+  "icons": [
+    { "src": "rupor-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "rupor-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "rupor-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "rupor-shot-wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Создать комнату",
+      "short_name": "Новая встреча",
+      "description": "Открыть Рупор и создать новую комнату",
+      "url": "./rupor.html?new=1",
+      "icons": [{ "src": "rupor-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Лабиринт — скачать игру</title>
+  <title>Лабиринт и Рупор — приложения</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -53,6 +53,27 @@
       box-shadow:
         0 0 0 1px oklch(100% 0 0 / 0.04) inset,
         0 24px 64px oklch(0% 0 0 / 0.55);
+    }
+
+    .card + .card { margin-top: 28px; }
+
+    /* Рупор keeps its own purple identity, so the card re-declares the
+       accent variables the shared rules below already use. */
+    .card--rupor {
+      --accent:     oklch(78% 0.16 285);
+      --accent-dim: oklch(60% 0.17 285);
+    }
+
+    .card--rupor h1 {
+      text-shadow: 0 0 28px oklch(70% 0.18 285 / 0.32);
+    }
+
+    .card--rupor .btn-primary {
+      color: oklch(12% 0.01 285);
+      box-shadow: 0 4px 20px oklch(70% 0.17 285 / 0.24);
+    }
+    .card--rupor .btn-primary:hover {
+      box-shadow: 0 6px 28px oklch(70% 0.17 285 / 0.40);
     }
 
     .icon-wrap {
@@ -278,6 +299,72 @@
       <span><span>Пауза</span>      <span><kbd>Shift</kbd></span></span>
       <span><span>В меню</span>     <span><kbd>Esc</kbd></span></span>
       <span><span>Цель</span>       <span>собери ключи → найди выход</span></span>
+    </div>
+  </div>
+
+  <div class="card card--rupor">
+    <div class="icon-wrap">
+      <img src="rupor-512.png" alt="Иконка: рупор">
+    </div>
+
+    <h1>РУПОР</h1>
+    <div class="tagline">видеовстречи напрямую между браузерами</div>
+
+    <div class="features">
+      <div class="feat">
+        <strong>Без сервера</strong>
+        Видео и звук идут напрямую между участниками
+      </div>
+      <div class="feat">
+        <strong>Демонстрация экрана</strong>
+        До 1080p и 60 кадров, текст остаётся резким
+      </div>
+      <div class="feat">
+        <strong>Без регистрации</strong>
+        Ни аккаунтов, ни подписок, ни лимитов
+      </div>
+      <div class="feat">
+        <strong>Один HTML-файл</strong>
+        Вся программа в одном файле
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="rupor.html" target="_blank">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5,3 19,10 5,17" fill="currentColor" stroke="none"/>
+        </svg>
+        Открыть в браузере
+      </a>
+      <a class="btn btn-secondary" href="rupor.html" download="Рупор.html">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2v10M6 8l4 4 4-4"/>
+          <path d="M3 15v1a2 2 0 002 2h10a2 2 0 002-2v-1"/>
+        </svg>
+        Скачать HTML-файл
+      </a>
+      <a class="btn btn-secondary" href="rupor.zip" download>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3h7l5 5v9a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+          <path d="M11 3v5h5"/>
+        </svg>
+        Скачать приложение
+      </a>
+    </div>
+
+    <p class="note">
+      <strong style="color:var(--text)">Приложение</strong> — ZIP с «Рупор.exe»: программа
+      открывается в отдельном окне со своим значком, без адресной строки.<br>
+      Можно также установить прямо из браузера: значок установки в адресной строке
+      или кнопка «Установить приложение» на стартовом экране.
+    </p>
+
+    <div class="divider"></div>
+
+    <div class="controls">
+      <span><span>Комната</span>   <span>создай код и передай его собеседнику</span></span>
+      <span><span>Вход</span>      <span>по коду комнаты или по ссылке</span></span>
+      <span><span>Экран</span>     <span class="keys"><kbd>1080p</kbd><kbd>60 к/с</kbd></span></span>
     </div>
   </div>
 </body>

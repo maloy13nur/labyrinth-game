@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Иконка Рупора</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0d0b14; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Draws the Рупор icon into any 2D context at any size.
+// Exposed as window.drawIcon(g, S) so the PNG set can be baked headlessly.
+function drawIcon(g, S, opts) {
+  opts = opts || {};
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, S, S);
+
+  const scale = S / 512;
+  const maskable = !!opts.maskable;
+
+  if (maskable) {
+    // Android masks the outer 10%: keep art inside the safe zone.
+    g.fillStyle = '#0d0b14';
+    g.fillRect(0, 0, S, S);
+    g.translate(S * 0.10, S * 0.10);
+    g.scale((S * 0.80) / S, (S * 0.80) / S);
+  }
+
+  g.scale(scale, scale);
+
+  function roundRect(x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  // ── BACKGROUND ────────────────────────────────────────────────────────────
+  g.save();
+  roundRect(4, 4, 504, 504, 112);
+  g.clip();
+
+  const bg = g.createLinearGradient(60, 20, 460, 500);
+  bg.addColorStop(0, '#3a2a6b');
+  bg.addColorStop(0.45, '#1e1740');
+  bg.addColorStop(1, '#0b0912');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 512, 512);
+
+  const glow = g.createRadialGradient(268, 246, 20, 268, 246, 220);
+  glow.addColorStop(0, 'rgba(168,130,255,0.42)');
+  glow.addColorStop(0.55, 'rgba(120,90,220,0.13)');
+  glow.addColorStop(1, 'rgba(80,60,160,0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, 512, 512);
+  g.restore();
+
+  // ── HORN ──────────────────────────────────────────────────────────────────
+  g.save();
+  g.translate(256, 254);
+  g.rotate(-0.16);
+
+  const metal = g.createLinearGradient(-150, -90, 150, 90);
+  metal.addColorStop(0, '#f3ecff');
+  metal.addColorStop(0.45, '#c9b4ff');
+  metal.addColorStop(1, '#8d6cf0');
+
+  // Cone
+  g.beginPath();
+  g.moveTo(-18, -34);
+  g.lineTo(150, -104);
+  g.quadraticCurveTo(178, -110, 178, -74);
+  g.lineTo(178, 74);
+  g.quadraticCurveTo(178, 110, 150, 104);
+  g.lineTo(-18, 34);
+  g.closePath();
+  g.fillStyle = metal;
+  g.fill();
+
+  // Inner shadow along the mouth
+  g.beginPath();
+  g.moveTo(150, -104);
+  g.quadraticCurveTo(178, -110, 178, -74);
+  g.lineTo(178, 74);
+  g.quadraticCurveTo(178, 110, 150, 104);
+  g.lineTo(128, 84);
+  g.lineTo(128, -84);
+  g.closePath();
+  g.fillStyle = 'rgba(60,40,120,0.34)';
+  g.fill();
+
+  // Body
+  g.beginPath();
+  roundRect(-150, -46, 140, 92, 26);
+  g.fillStyle = metal;
+  g.fill();
+
+  // Mouthpiece
+  g.beginPath();
+  roundRect(-176, -26, 34, 52, 14);
+  g.fillStyle = '#8d6cf0';
+  g.fill();
+
+  // Band
+  g.beginPath();
+  g.moveTo(-46, -42);
+  g.lineTo(-46, 42);
+  g.strokeStyle = 'rgba(30,20,60,0.35)';
+  g.lineWidth = 10;
+  g.lineCap = 'round';
+  g.stroke();
+
+  g.restore();
+
+  // ── SOUND ARCS ────────────────────────────────────────────────────────────
+  g.save();
+  g.translate(256, 254);
+  g.rotate(-0.16);
+  g.lineCap = 'round';
+  const arcs = [
+    { r: 226, w: 20, col: 'rgba(198,170,255,0.95)' },
+    { r: 272, w: 16, col: 'rgba(170,140,250,0.70)' },
+    { r: 314, w: 12, col: 'rgba(150,120,240,0.45)' },
+  ];
+  for (const arc of arcs) {
+    g.beginPath();
+    g.arc(120, 0, arc.r, -0.62, 0.62);
+    g.strokeStyle = arc.col;
+    g.lineWidth = arc.w;
+    g.stroke();
+  }
+  g.restore();
+
+  // ── VIGNETTE + GLASS ──────────────────────────────────────────────────────
+  g.save();
+  roundRect(4, 4, 504, 504, 112);
+  g.clip();
+  const vig = g.createRadialGradient(256, 230, 140, 256, 256, 330);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.34)');
+  g.fillStyle = vig;
+  g.fillRect(0, 0, 512, 512);
+
+  const hi = g.createLinearGradient(0, 0, 0, 220);
+  hi.addColorStop(0, 'rgba(255,255,255,0.14)');
+  hi.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = hi;
+  g.fillRect(0, 0, 512, 220);
+  g.restore();
+
+  // ── BORDER ────────────────────────────────────────────────────────────────
+  roundRect(4, 4, 504, 504, 112);
+  g.strokeStyle = 'rgba(200,175,255,0.28)';
+  g.lineWidth = 3;
+  g.stroke();
+
+  g.restore();
+}
+
+window.drawIcon = drawIcon;
+
+// Render at the size requested in the query string.
+(function () {
+  const S = parseInt(new URLSearchParams(location.search).get('size') || '512', 10);
+  const c = document.getElementById('c');
+  c.width = S; c.height = S;
+  drawIcon(c.getContext('2d'), S);
+})();
+</script>
+</body>
+</html>
