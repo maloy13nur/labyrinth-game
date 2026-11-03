@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Иконка приложения</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0a0f14; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Renders the app icon at any size via ?size=N — used to bake the PNG/ICO set.
+(function () {
+  const S = parseInt(new URLSearchParams(location.search).get('size') || '512', 10);
+  const c = document.getElementById('c');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  g.scale(S / 512, S / 512);
+
+  const rnd = (function (a) {
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  })(20260101);
+
+  function roundRect(x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  function capsule(x1, y1, x2, y2, w, color) {
+    g.strokeStyle = color;
+    g.lineWidth = w;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(x1, y1);
+    g.lineTo(x2, y2);
+    g.stroke();
+  }
+
+  // ── BACKGROUND ────────────────────────────────────────────────────────────
+  g.save();
+  roundRect(4, 4, 504, 504, 108);
+  g.clip();
+
+  const bg = g.createLinearGradient(60, 20, 460, 500);
+  bg.addColorStop(0, '#33503f');
+  bg.addColorStop(0.45, '#16241f');
+  bg.addColorStop(1, '#080d11');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 512, 512);
+
+  // faint maze behind the character
+  g.strokeStyle = 'rgba(160, 235, 190, 0.075)';
+  g.lineWidth = 5;
+  g.lineCap = 'butt';
+  const CELL = 64;
+  for (let i = 0; i <= 8; i++) {
+    for (let j = 0; j <= 8; j++) {
+      if (rnd() > 0.55) {
+        g.beginPath();
+        g.moveTo(i * CELL, j * CELL);
+        g.lineTo(i * CELL + CELL, j * CELL);
+        g.stroke();
+      }
+      if (rnd() > 0.55) {
+        g.beginPath();
+        g.moveTo(i * CELL, j * CELL);
+        g.lineTo(i * CELL, j * CELL + CELL);
+        g.stroke();
+      }
+    }
+  }
+
+  // warm lamp glow from the upper left
+  const glow = g.createRadialGradient(150, 120, 0, 150, 120, 430);
+  glow.addColorStop(0, 'rgba(190, 245, 205, 0.20)');
+  glow.addColorStop(0.5, 'rgba(120, 200, 160, 0.06)');
+  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, 512, 512);
+
+  // ── CLOAK / SHOULDERS ─────────────────────────────────────────────────────
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.55)';
+  g.shadowBlur = 34;
+  g.shadowOffsetY = 10;
+  const cloak = g.createLinearGradient(70, 380, 330, 540);
+  cloak.addColorStop(0, '#4d7452');
+  cloak.addColorStop(0.5, '#37573d');
+  cloak.addColorStop(1, '#20332a');
+  g.fillStyle = cloak;
+  g.beginPath();
+  g.ellipse(200, 512, 164, 124, -0.06, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+
+  // collar
+  g.fillStyle = '#2b4432';
+  g.beginPath();
+  g.ellipse(200, 404, 96, 46, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = 'rgba(120, 175, 130, 0.28)';
+  g.beginPath();
+  g.ellipse(196, 392, 78, 20, 0, Math.PI, Math.PI * 2);
+  g.fill();
+
+  // cloak folds
+  g.strokeStyle = 'rgba(14, 26, 18, 0.45)';
+  g.lineWidth = 5;
+  for (const [x1, y1, x2, y2] of [[120, 470, 96, 545], [180, 486, 176, 552], [262, 474, 286, 548]]) {
+    g.beginPath();
+    g.moveTo(x1, y1);
+    g.lineTo(x2, y2);
+    g.stroke();
+  }
+
+  // ── RAISED ARM ────────────────────────────────────────────────────────────
+  capsule(300, 452, 372, 340, 62, '#3d6044');
+  capsule(300, 448, 366, 344, 30, 'rgba(126, 180, 134, 0.30)');
+
+  // cuff
+  g.fillStyle = '#2a4030';
+  g.save();
+  g.translate(374, 334);
+  g.rotate(-0.86);
+  g.beginPath();
+  g.ellipse(0, 0, 20, 34, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#c9a24a';
+  g.beginPath();
+  g.ellipse(6, 0, 8, 30, 0, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+
+  // ── HEAD ──────────────────────────────────────────────────────────────────
+  g.fillStyle = '#8f6244';
+  g.beginPath();
+  g.ellipse(200, 356, 40, 34, 0, 0, Math.PI * 2);
+  g.fill();
+
+  const skin = g.createRadialGradient(176, 274, 8, 204, 312, 92);
+  skin.addColorStop(0, '#f6cfaa');
+  skin.addColorStop(0.55, '#e2b087');
+  skin.addColorStop(1, '#b07f5b');
+  g.fillStyle = skin;
+  g.beginPath();
+  g.arc(200, 308, 74, 0, Math.PI * 2);
+  g.fill();
+
+  // brow shadow under the brim
+  g.fillStyle = 'rgba(112, 68, 40, 0.30)';
+  g.beginPath();
+  g.ellipse(200, 282, 66, 22, 0, 0, Math.PI);
+  g.fill();
+
+  // eyes + smile
+  g.fillStyle = '#3a2418';
+  g.beginPath();
+  g.arc(178, 312, 6.4, 0, Math.PI * 2);
+  g.fill();
+  g.beginPath();
+  g.arc(224, 312, 6.4, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.beginPath();
+  g.arc(176, 309, 2.2, 0, Math.PI * 2);
+  g.fill();
+  g.beginPath();
+  g.arc(222, 309, 2.2, 0, Math.PI * 2);
+  g.fill();
+
+  g.strokeStyle = 'rgba(90, 48, 30, 0.75)';
+  g.lineWidth = 4;
+  g.lineCap = 'round';
+  g.beginPath();
+  g.arc(201, 330, 18, 0.35, Math.PI - 0.35);
+  g.stroke();
+
+  // ── HAT ───────────────────────────────────────────────────────────────────
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.5)';
+  g.shadowBlur = 22;
+  g.shadowOffsetY = 8;
+
+  const brim = g.createLinearGradient(60, 236, 340, 300);
+  brim.addColorStop(0, '#8d6b3c');
+  brim.addColorStop(0.55, '#6d5130');
+  brim.addColorStop(1, '#43301b');
+  g.fillStyle = brim;
+  g.beginPath();
+  g.ellipse(200, 262, 136, 42, -0.04, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+
+  // crown
+  const crown = g.createLinearGradient(136, 186, 268, 268);
+  crown.addColorStop(0, '#9a7643');
+  crown.addColorStop(0.6, '#755834');
+  crown.addColorStop(1, '#4a351e');
+  g.fillStyle = crown;
+  g.beginPath();
+  g.ellipse(200, 240, 68, 56, 0, Math.PI, Math.PI * 2);
+  g.lineTo(268, 258);
+  g.ellipse(200, 258, 68, 20, 0, 0, Math.PI);
+  g.closePath();
+  g.fill();
+
+  // hat band
+  g.fillStyle = '#2f2113';
+  g.beginPath();
+  g.ellipse(200, 256, 68, 20, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#d8b25a';
+  g.beginPath();
+  g.ellipse(200, 254, 68, 5, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#c9a24a';
+  g.beginPath();
+  g.arc(230, 252, 8, 0, Math.PI * 2);
+  g.fill();
+
+  // brim edge highlight
+  g.strokeStyle = 'rgba(214, 176, 106, 0.55)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.ellipse(200, 262, 136, 42, -0.04, Math.PI * 1.06, Math.PI * 1.94);
+  g.stroke();
+
+  // ── HAND: OK SIGN ─────────────────────────────────────────────────────────
+  const skinDark = '#b8845c';
+  const skinMid  = '#e0af85';
+  const skinLight = '#f4cca6';
+
+  // three extended fingers (drawn first, bases hidden by the palm)
+  capsule(412, 292, 420, 148, 30, skinMid);
+  capsule(440, 300, 456, 166, 29, skinMid);
+  capsule(464, 312, 486, 206, 27, skinMid);
+  capsule(410, 288, 419, 156, 11, 'rgba(255, 232, 208, 0.35)');
+
+  // thumb pad reaching up to meet the curled index
+  capsule(392, 330, 356, 250, 32, skinMid);
+
+  // palm
+  const palm = g.createRadialGradient(374, 286, 6, 394, 316, 66);
+  palm.addColorStop(0, skinLight);
+  palm.addColorStop(0.6, skinMid);
+  palm.addColorStop(1, skinDark);
+  g.fillStyle = palm;
+  g.beginPath();
+  g.ellipse(390, 308, 48, 54, 0.18, 0, Math.PI * 2);
+  g.fill();
+
+  // the OK ring — thumb and index closed into a circle
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.45)';
+  g.shadowBlur = 20;
+  g.shadowOffsetX = 4;
+  g.shadowOffsetY = 6;
+  g.fillStyle = skinMid;
+  g.beginPath();
+  g.arc(354, 216, 50, 0, Math.PI * 2);
+  g.arc(354, 216, 30, 0, Math.PI * 2);
+  g.fill('evenodd');
+  g.restore();
+
+  // ring shading: lit rim, dark inner wall
+  const rim = g.createLinearGradient(310, 176, 400, 262);
+  rim.addColorStop(0, skinLight);
+  rim.addColorStop(0.6, skinMid);
+  rim.addColorStop(1, skinDark);
+  g.strokeStyle = rim;
+  g.lineWidth = 6;
+  g.beginPath();
+  g.arc(354, 216, 47, Math.PI * 0.95, Math.PI * 2.05);
+  g.stroke();
+
+  g.strokeStyle = 'rgba(96, 56, 30, 0.45)';
+  g.lineWidth = 4;
+  g.beginPath();
+  g.arc(354, 216, 32, 0, Math.PI * 2);
+  g.stroke();
+
+  // knuckle creases
+  g.strokeStyle = 'rgba(120, 74, 44, 0.35)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(414, 306);
+  g.quadraticCurveTo(438, 316, 462, 314);
+  g.stroke();
+
+  g.restore();
+
+  // ── FRAME ─────────────────────────────────────────────────────────────────
+  g.strokeStyle = 'rgba(150, 235, 180, 0.35)';
+  g.lineWidth = 3;
+  roundRect(5, 5, 502, 502, 106);
+  g.stroke();
+
+  const vig = g.createRadialGradient(256, 236, 120, 256, 256, 320);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.55)');
+  g.fillStyle = vig;
+  g.fillRect(0, 0, 512, 512);
+})();
+</script>
+</body>
+</html>
