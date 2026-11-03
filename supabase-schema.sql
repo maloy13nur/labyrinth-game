@@ -34,6 +34,21 @@ create policy "profiles update own"
   on public.profiles for update
   to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
+-- Старое имя нужно, если регистрация оборвалась между созданием аккаунта и
+-- записью профиля: аккаунт цел, профиля нет, и приложение не может его
+-- достроить само — оно не знает, каким именем человек регистрировался.
+-- Функция отдаёт имя самому пользователю и только его; снаружи вместо неё
+-- доступен обычный просмотр профилей.
+create or replace function public.my_username()
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select split_part(email, '@', 1) from auth.users where id = auth.uid();
+$$;
+
 -- ── ДРУЗЬЯ ─────────────────────────────────────────────────────────────────
 -- Одна строка на пару. pending — заявка отправлена, accepted — друзья.
 create table if not exists public.friendships (
@@ -64,13 +79,16 @@ create policy "friendships request as self"
   to authenticated
   with check (auth.uid() = requester);
 
--- Принять заявку может только адресат; отменить — любая из сторон.
+-- Принять заявку может только адресат. Раньше политика разрешала обеим
+-- сторонам менять строку, а значит отправитель мог сам объявить себя другом
+-- без согласия второго человека. Отменить заявку — это удаление строки,
+-- для него есть отдельная политика.
 drop policy if exists "friendships respond" on public.friendships;
 create policy "friendships respond"
   on public.friendships for update
   to authenticated
-  using (auth.uid() = requester or auth.uid() = addressee)
-  with check (auth.uid() = requester or auth.uid() = addressee);
+  using (addressee = auth.uid())
+  with check (addressee = auth.uid() and status = 'accepted');
 
 drop policy if exists "friendships remove" on public.friendships;
 create policy "friendships remove"
@@ -111,6 +129,21 @@ as $$
   );
 $$;
 
+-- То же для владельца: политика удаления участника иначе обращалась бы к
+-- public.groups, а у той политики есть своя проверка членства.
+create or replace function public.is_group_owner(gid uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.groups
+    where id = gid and owner = auth.uid()
+  );
+$$;
+
 alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
 
@@ -144,19 +177,27 @@ create policy "members visible to group"
   to authenticated
   using (public.is_group_member(group_id) or member = auth.uid());
 
--- Вступить в группу можно только собой — по коду приглашения это делает
--- отдельная функция ниже (иначе любой мог бы добавить кого угодно).
+-- Добавить себя в группу можно только создав её: так организатор попадает в
+-- собственный список участников. Вступление по коду идёт через функцию ниже,
+-- которая работает в обход этой политики. Без такого ограничения любой, кто
+-- узнал UUID чужой группы, мог бы вступить в неё, минуя код приглашения.
 drop policy if exists "members add self" on public.group_members;
 create policy "members add self"
   on public.group_members for insert
   to authenticated
-  with check (member = auth.uid());
+  with check (member = auth.uid() and public.is_group_owner(group_id));
 
 drop policy if exists "members leave" on public.group_members;
 create policy "members leave"
   on public.group_members for delete
   to authenticated
-  using (member = auth.uid() or public.is_group_member(group_id));
+  using (
+    -- Anyone may leave on their own.  Removing somebody else is allowed only
+    -- to the group owner: a plain member must not be able to expel the person
+    -- who created the group.
+    member = auth.uid()
+    or public.is_group_owner(group_id)
+  );
 
 -- Вступление по коду: функция находит группу и добавляет звонящего.
 -- Политика "members add self" иначе не даёт прочитать чужую группу до вставки.
@@ -177,6 +218,23 @@ begin
     values (gid, auth.uid(), 'member')
     on conflict (group_id, member) do nothing;
   return gid;
+end;
+$$;
+
+-- Куда вступил — оттуда можно и выйти. Но организатору выходить нельзя: без
+-- него группа осталась бы ничьей и нестираемой. Проверка живёт в базе, а не
+-- только в интерфейсе, поэтому обойти её нельзя.
+create or replace function public.leave_group(gid uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.groups where id = gid and owner = auth.uid()) then
+    raise exception 'OWNER_CANNOT_LEAVE';
+  end if;
+  delete from public.group_members where group_id = gid and member = auth.uid();
 end;
 $$;
 

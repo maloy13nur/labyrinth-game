@@ -3615,10 +3615,22 @@
     const rows = await rest('/profiles?id=eq.' + session.user.id + '&select=*');
     if (rows && rows[0]) { storeProfile(rows[0]); return profile; }
 
-    // The username comes back from the auth account: sign-up derives the email
-    // from it, so it is the one piece of the name we can recover.
-    const email = (session.user && session.user.email) || '';
-    const username = email.split('@')[0] || ('user' + session.user.id.slice(0, 6));
+    // The original username is not in the session that comes back from a
+    // sign-in, so it is asked for explicitly.  Without this a user whose
+    // registration was interrupted could never get back the name they chose.
+    let username = '';
+    try {
+      const mine = await request('/rest/v1/rpc/my_username', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({}),
+      });
+      if (typeof mine === 'string' && mine) username = mine;
+    } catch (_) {}
+    if (!username) {
+      const email = (session.user && session.user.email) || '';
+      username = email.split('@')[0] || ('user' + session.user.id.slice(0, 6));
+    }
 
     const made = await rest('/profiles', {
       method: 'POST',
@@ -3901,10 +3913,18 @@
   }
 
   async function leaveGroup(gid) {
-    await rest('/group_members?group_id=eq.' + gid + '&member=eq.' + session.user.id, {
-      method: 'DELETE',
-      headers: { Prefer: 'return=minimal' },
-    });
+    // Through the function rather than a plain delete: the database refuses to
+    // let the owner orphan their own group.
+    try {
+      await request('/rest/v1/rpc/leave_group', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ gid }),
+      });
+    } catch (e) {
+      if (/OWNER_CANNOT_LEAVE/.test((e && e.message) || '')) throw new Error('OWNER_CANNOT_LEAVE');
+      throw e;
+    }
   }
 
   async function deleteGroup(gid) {
@@ -4130,6 +4150,7 @@
     EMAIL_CONFIRMATION_ON:
       'В проекте Supabase включено подтверждение почты. Отключите его: Authentication → Providers → Email → Confirm email → выключить. Без этого вход невозможен.',
     GROUP_NOT_FOUND: 'Группа с таким кодом не найдена.',
+    OWNER_CANNOT_LEAVE: 'Организатор не может выйти из своей группы. Её можно только удалить.',
     'User already registered': 'Это имя уже занято.',
     'Invalid login credentials': 'Неверное имя или пароль.',
     'Password should be at least 6 characters': 'Пароль короче 6 символов.',
