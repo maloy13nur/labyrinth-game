@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лабиринт</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0e0e14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Лабиринт">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: oklch(14% 0.01 260);
+      --surface: oklch(18% 0.015 260);
+      --border: oklch(28% 0.02 260);
+      --text: oklch(92% 0.01 260);
+      --muted: oklch(55% 0.01 260);
+      --accent: oklch(72% 0.18 145);
+      --accent-dim: oklch(52% 0.14 145);
+      --danger: oklch(65% 0.2 25);
+      --wall: oklch(22% 0.015 260);
+      --floor: oklch(16% 0.008 260);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #game {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    #ui {
+      display: flex;
+      gap: 32px;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    #ui span { color: var(--text); font-weight: 500; }
+
+    canvas {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--floor);
+      width: auto;
+      height: auto;
+      max-width: min(96vw, 100%);
+      max-height: calc(100vh - 200px);
+    }
+
+    #message {
+      min-height: 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    #controls {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    #btn-restart {
+      padding: 8px 24px;
+      background: var(--accent-dim);
+      color: var(--bg);
+      border: none;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+    #btn-restart:hover { background: var(--accent); }
+    #btn-restart:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── screens ───────────────────────────────────────────────── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 42%, oklch(20% 0.03 250), transparent 72%),
+        radial-gradient(ellipse 55% 45% at 50% 110%, oklch(22% 0.05 145 / 0.30), transparent 70%),
+        var(--bg);
+    }
+    .screen.hidden, #game.hidden { display: none; }
+
+    .screen h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    #menu .logo {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+      text-shadow: 0 0 32px oklch(72% 0.18 145 / 0.35);
+      margin-bottom: 2px;
+    }
+
+    #menu .tagline {
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 22px;
+    }
+
+    .btn {
+      min-width: 240px;
+      padding: 13px 26px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      background: oklch(24% 0.02 260);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 130ms ease, border-color 130ms ease, transform 90ms ease, color 130ms ease;
+    }
+    .btn:hover {
+      background: oklch(30% 0.04 150);
+      border-color: var(--accent-dim);
+      color: #fff;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .btn.primary {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: oklch(12% 0.01 260);
+    }
+    .btn.primary:hover { background: var(--accent); color: oklch(12% 0.01 260); }
+
+    .btn.ghost {
+      min-width: 240px;
+      background: transparent;
+      font-size: 0.875rem;
+      color: var(--muted);
+      padding: 10px 26px;
+    }
+    .btn.ghost:hover { background: oklch(24% 0.02 260); color: var(--text); }
+
+    .diff-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .diff {
+      min-width: 340px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 13px 20px;
+      text-align: left;
+      background: oklch(20% 0.015 260);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: background 130ms ease, border-color 130ms ease;
+    }
+    .diff:hover { background: oklch(25% 0.02 260); border-color: oklch(40% 0.03 260); }
+    .diff:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+    .diff .name {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .diff .meta {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+    .diff .tick {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 130ms ease;
+    }
+    .diff[aria-checked="true"] {
+      border-color: var(--accent);
+      background: oklch(26% 0.04 150);
+    }
+    .diff[aria-checked="true"] .tick { opacity: 1; }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      max-width: 360px;
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <!-- ── MAIN MENU ────────────────────────────────────────────── -->
+  <div class="screen" id="menu">
+    <div class="logo">ЛАБИРИНТ</div>
+    <div class="tagline">выберись из катакомб</div>
+    <button class="btn primary" id="btn-play">Играть</button>
+    <button class="btn" id="btn-settings">Настройки</button>
+    <div class="hint">WASD или стрелки — движение&nbsp;·&nbsp;Shift — пауза</div>
+  </div>
+
+  <!-- ── SETTINGS ─────────────────────────────────────────────── -->
+  <div class="screen hidden" id="settings">
+    <h2>Сложность</h2>
+    <div class="diff-list" id="diff-list">
+      <button class="diff" data-diff="easy" aria-checked="false">
+        <span class="name">Лёгкая
+          <span class="meta">17×17, луч 4.5 клетки, 2–3 офицера</span>
+        </span>
+        <span class="tick">✓</span>
+      </button>
+      <button class="diff" data-diff="normal" aria-checked="true">
+        <span class="name">Обычная
+          <span class="meta">21×21, луч 6 клеток, 2–4 офицера</span>
+        </span>
+        <span class="tick">✓</span>
+      </button>
+      <button class="diff" data-diff="hard" aria-checked="false">
+        <span class="name">Сложная
+          <span class="meta">25×25, луч 8 клеток, 3–6 офицеров</span>
+        </span>
+        <span class="tick">✓</span>
+      </button>
+    </div>
+    <div class="hint" id="diff-hint"></div>
+    <button class="btn ghost" id="btn-settings-back">Назад</button>
+  </div>
+
+  <!-- ── GAME ─────────────────────────────────────────────────── -->
+  <div id="game" class="hidden">
+    <div id="ui">
+      <div>Уровень: <span id="lvl">1</span></div>
+      <div>Время: <span id="timer">0.0</span>с</div>
+      <div>Ключи: <span id="keys">0 / 0</span></div>
+    </div>
+    <canvas id="c"></canvas>
+    <div id="message"></div>
+    <button id="btn-restart">Заново</button>
+    <div id="controls">WASD или стрелки — движение&nbsp;&nbsp;·&nbsp;&nbsp;Shift — пауза&nbsp;&nbsp;·&nbsp;&nbsp;Esc — меню</div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const TILE  = 32;
+
+  // ── DIFFICULTY ────────────────────────────────────────────────────────────
+  // Maze size, torch reach / cone width and the police patrol count all
+  // shift with the chosen difficulty.
+  const DIFFICULTIES = {
+    easy: {
+      label:  'Лёгкая',
+      cols: 17, rows: 17,
+      detectRadius: 4.5,
+      detectHalfAngle: 0.68,   // ~78° cone
+      enemyStart: 2, enemyMax: 3,
+      braidBonus: 0.12,
+    },
+    normal: {
+      label:  'Обычная',
+      cols: 21, rows: 21,
+      detectRadius: 6,
+      detectHalfAngle: 0.9,    // ~104° cone
+      enemyStart: 2, enemyMax: 4,
+      braidBonus: 0,
+    },
+    hard: {
+      label:  'Сложная',
+      cols: 25, rows: 25,
+      detectRadius: 8,
+      detectHalfAngle: 1.1,    // ~126° cone
+      enemyStart: 3, enemyMax: 6,
+      braidBonus: -0.10,
+    },
+  };
+
+  let difficultyKey = 'normal';
+  let D  = DIFFICULTIES.normal;   // active config
+  let COLS = D.cols;
+  let ROWS = D.rows;
+  let DETECT_RADIUS    = D.detectRadius;
+  let DETECT_HALF_ANGLE = D.detectHalfAngle;
+
+  const SPEED = 3.5;             // player, tiles per second
+  const ENEMY_SPEED = 2.3;       // chasing speed (slower than player)
+  const ENEMY_WANDER_SPEED = 1.6;
+  const TURN_SPEED = 6;          // radians per second
+  const IDLE_TURN_SPEED = 0.9;   // slow gaze sweep while standing still
+  const R = 0.32;                // character radius in tiles
+
+  const C   = document.getElementById('c');
+  const ctx = C.getContext('2d');
+
+  const elLvl   = document.getElementById('lvl');
+  const elTimer = document.getElementById('timer');
+  const elKeys  = document.getElementById('keys');
+  const elMsg   = document.getElementById('message');
+
+  const style = getComputedStyle(document.documentElement);
+  const CLR = {
+    wall:    style.getPropertyValue('--wall').trim()   || '#1c1c24',
+    floor:   style.getPropertyValue('--floor').trim()  || '#141418',
+    player:  style.getPropertyValue('--accent').trim() || '#5eba8a',
+    enemy:   'oklch(68% 0.16 250)',
+    exit:    style.getPropertyValue('--danger').trim() || '#e05a3a',
+    key:     '#e6b84a',
+    keyGlow: 'rgba(230,184,74,0.3)',
+    visited: 'rgba(90,200,130,0.07)',
+    shadow:  'rgba(0,0,0,0.55)',
+  };
+
+  let maze, floorList, keys, exit, player, enemies, keysCollected, totalKeys;
+  let bg = null;
+  let WALL_VARIANTS = null, FLOOR_VARIANTS = null;
+  let level = 1;
+  let elapsed = 0;
+  let lastTime = null;
+  let raf;
+  let gameOver = false;
+  let won = false;
+  let caught = false;
+  let paused = false;
+  let visited;
+
+  const pressed = {};
+  window.addEventListener('keydown', e => {
+    if (state !== 'playing') return;
+    if (e.key === 'Shift' && !e.repeat) {
+      if (!gameOver) paused = !paused;
+      e.preventDefault();
+      return;
+    }
+    pressed[e.key] = true;
+  });
+  window.addEventListener('keyup',   e => { pressed[e.key] = false; });
+
+  function dir() {
+    let dx = 0, dy = 0;
+    if (pressed['ArrowLeft']  || pressed['a'] || pressed['A']) dx -= 1;
+    if (pressed['ArrowRight'] || pressed['d'] || pressed['D']) dx += 1;
+    if (pressed['ArrowUp']    || pressed['w'] || pressed['W']) dy -= 1;
+    if (pressed['ArrowDown']  || pressed['s'] || pressed['S']) dy += 1;
+    if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+    return { dx, dy };
+  }
+
+  // ── MAZE ──────────────────────────────────────────────────────────────────
+  // Perfect maze (recursive backtracker) + braiding (removes walls between
+  // parallel corridors) so there are loops and many alternative routes.
+  function buildMaze() {
+    const grid = Array.from({ length: ROWS }, () => new Uint8Array(COLS).fill(1));
+
+    function carve(r, c) {
+      grid[r][c] = 0;
+      const dirs = shuffle([[0,-2],[0,2],[-2,0],[2,0]]);
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if (nr > 0 && nr < ROWS-1 && nc > 0 && nc < COLS-1 && grid[nr][nc] === 1) {
+          grid[r + dr/2][c + dc/2] = 0;
+          carve(nr, nc);
+        }
+      }
+    }
+    carve(1, 1);
+
+    // braid — open walls that separate two run-parallel corridors
+    const braidChance = Math.max(0.10,
+      Math.min(0.30 + level * 0.06 + D.braidBonus, 0.72));
+    for (let r = 1; r < ROWS - 1; r++) {
+      for (let c = 1; c < COLS - 1; c++) {
+        if (grid[r][c] !== 1) continue;
+        const up    = grid[r-1][c] === 0;
+        const down  = grid[r+1][c] === 0;
+        const left  = grid[r][c-1] === 0;
+        const right = grid[r][c+1] === 0;
+        if ((up && down && !left && !right) || (left && right && !up && !down)) {
+          if (Math.random() < braidChance) grid[r][c] = 0;
+        }
+      }
+    }
+
+    return grid;
+  }
+
+  function shuffle(a) {
+    for (let i = a.length-1; i > 0; i--) {
+      const j = randInt(i+1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function randInt(n) { return Math.floor(Math.random() * n); }
+
+  function collectFloor() {
+    const cells = [];
+    for (let r = 1; r < ROWS; r++)
+      for (let c = 1; c < COLS; c++)
+        if (maze[r][c] === 0) cells.push([r, c]);
+    return cells;
+  }
+
+  function farthestFrom(pr, pc, cells) {
+    let best = null, bestD = -1;
+    for (const [r, c] of cells) {
+      const d = (r-pr)**2 + (c-pc)**2;
+      if (d > bestD) { bestD = d; best = [r, c]; }
+    }
+    return best;
+  }
+
+  // BFS shortest path between two tiles. Returns cells excluding the start.
+  function bfsPath(sr, sc, tr, tc) {
+    if (sr === tr && sc === tc) return [];
+    const seen = Array.from({ length: ROWS }, () => new Uint8Array(COLS));
+    const parent = Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
+    const q = [[sr, sc]];
+    seen[sr][sc] = 1;
+    let head = 0;
+    const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+
+    while (head < q.length) {
+      const [r, c] = q[head++];
+      if (r === tr && c === tc) {
+        const path = [];
+        let cur = [r, c];
+        while (!(cur[0] === sr && cur[1] === sc)) {
+          path.push(cur);
+          cur = parent[cur[0]][cur[1]];
+        }
+        path.reverse();
+        return path;
+      }
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+            !seen[nr][nc] && maze[nr][nc] === 0) {
+          seen[nr][nc] = 1;
+          parent[nr][nc] = [r, c];
+          q.push([nr, nc]);
+        }
+      }
+    }
+    return [];
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  function spawnEnemies(cells) {
+    // starts small and grows with the level, capped per difficulty
+    const grown = D.enemyStart + Math.floor((level - 1) * 0.5);
+    const count = Math.max(1, Math.min(D.enemyMax, grown));
+    const far = cells.filter(([r, c]) => Math.abs(r - 1) + Math.abs(c - 1) > 6);
+    shuffle(far);
+    const chosen = far.slice(0, count);
+
+    enemies = chosen.map(([r, c]) => ({
+      r: r + 0.5,
+      c: c + 0.5,
+      angle: Math.random() * Math.PI * 2,   // facing (radians)
+      state: 'wander',          // wander | chase | search
+      lastSeen: null,
+      path: [],
+      repathTimer: 0,
+    }));
+  }
+
+  function initLevel() {
+    gameOver = false;
+    won = false;
+    caught = false;
+    paused = false;
+    elapsed = 0;
+    lastTime = null;
+    elMsg.textContent = '';
+    elLvl.textContent = level;
+
+    // canvas follows the current maze size
+    if (C.width !== COLS * TILE || C.height !== ROWS * TILE) {
+      C.width  = COLS * TILE;
+      C.height = ROWS * TILE;
+    }
+
+    maze = buildMaze();
+    floorList = collectFloor();
+    buildBackground();
+    visited = Array.from({ length: ROWS }, () => new Uint8Array(COLS));
+
+    player = { r: 1.5, c: 1.5, angle: Math.PI / 2 };
+    visited[1][1] = 1;
+
+    const [er, ec] = farthestFrom(1, 1, floorList);
+    exit = { r: er, c: ec };
+
+    totalKeys = 1 + Math.min(level - 1, 4);
+    const keyPool = floorList.filter(([r,c]) =>
+      !(r === 1 && c === 1) && !(r === er && c === ec));
+    shuffle(keyPool);
+    keys = keyPool.slice(0, totalKeys).map(([r,c]) => ({ r, c, collected: false }));
+    keysCollected = 0;
+
+    spawnEnemies(floorList);
+    updateHUD();
+  }
+
+  function updateHUD() {
+    elKeys.textContent = `${keysCollected} / ${totalKeys}`;
+    elTimer.textContent = elapsed.toFixed(1);
+  }
+
+  // ── MATH / COLLISION ──────────────────────────────────────────────────────
+  function isWall(r, c) {
+    const ri = Math.floor(r), ci = Math.floor(c);
+    if (ri < 0 || ri >= ROWS || ci < 0 || ci >= COLS) return true;
+    return maze[ri][ci] === 1;
+  }
+
+  function canMove(nr, nc) {
+    return !isWall(nr - R, nc - R)
+        && !isWall(nr - R, nc + R)
+        && !isWall(nr + R, nc - R)
+        && !isWall(nr + R, nc + R);
+  }
+
+  function angleDiff(from, to) {
+    let d = to - from;
+    while (d >  Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return d;
+  }
+
+  // Line of sight: must be inside the facing cone, within range, no wall.
+  function canSee(e, p) {
+    const dx = p.c - e.c, dy = p.r - e.r;
+    const dist = Math.hypot(dx, dy);
+    if (dist > DETECT_RADIUS) return false;
+    if (Math.abs(angleDiff(e.angle, Math.atan2(dy, dx))) > DETECT_HALF_ANGLE) return false;
+    const steps = Math.max(2, Math.ceil(dist / 0.08));
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      if (isWall(e.r + dy * t, e.c + dx * t)) return false;
+    }
+    return true;
+  }
+
+  // ── ENEMY AI ──────────────────────────────────────────────────────────────
+  function updateEnemies(dt) {
+    for (const e of enemies) {
+      // — perception
+      if (canSee(e, player)) {
+        e.state = 'chase';
+        e.lastSeen = { r: player.r, c: player.c };
+      } else if (e.state === 'chase') {
+        e.state = 'search';      // lost sight — go where you last saw them
+      }
+
+      // — (re)planning
+      e.repathTimer -= dt;
+      if (e.repathTimer <= 0) {
+        const sr = Math.floor(e.r), sc = Math.floor(e.c);
+        if (e.state === 'chase') {
+          e.path = bfsPath(sr, sc, Math.floor(player.r), Math.floor(player.c));
+          e.repathTimer = 0.15;
+        } else if (e.state === 'search' && e.lastSeen) {
+          e.path = bfsPath(sr, sc, Math.floor(e.lastSeen.r), Math.floor(e.lastSeen.c));
+          e.repathTimer = 0.4;
+        } else {
+          e.repathTimer = 0.3;
+        }
+      }
+
+      // — wander target
+      if (e.state === 'wander' && e.path.length === 0) {
+        const [tr, tc] = floorList[randInt(floorList.length)];
+        e.path = bfsPath(Math.floor(e.r), Math.floor(e.c), tr, tc);
+      }
+
+      // — arrived at last known position, back to wandering
+      if (e.state === 'search' && e.lastSeen && e.path.length === 0 &&
+          Math.hypot(e.r - e.lastSeen.r, e.c - e.lastSeen.c) < 0.5) {
+        e.state = 'wander';
+        e.lastSeen = null;
+      }
+
+      // — movement
+      if (e.path.length > 0) {
+        const [tr, tc] = e.path[0];
+        const targetR = tr + 0.5, targetC = tc + 0.5;
+        const dr = targetR - e.r, dc = targetC - e.c;
+        const dist = Math.hypot(dr, dc);
+        const speed = e.state === 'chase' ? ENEMY_SPEED : ENEMY_WANDER_SPEED;
+        const step = speed * dt;
+
+        if (dist <= step) {
+          e.r = targetR;
+          e.c = targetC;
+          e.path.shift();
+        } else {
+          e.r += (dr / dist) * step;
+          e.c += (dc / dist) * step;
+        }
+
+        // turn smoothly toward the direction of travel
+        const want = Math.atan2(dr, dc);
+        const diff = angleDiff(e.angle, want);
+        const maxTurn = TURN_SPEED * dt;
+        e.angle += Math.max(-maxTurn, Math.min(maxTurn, diff));
+      } else {
+        // nothing to walk to — sweep the gaze so no corridor stays unwatched
+        e.angle += IDLE_TURN_SPEED * dt;
+      }
+    }
+  }
+
+  // ── UPDATE ────────────────────────────────────────────────────────────────
+  function update(dt) {
+    elapsed += dt;
+
+    const { dx, dy } = dir();
+    const step = SPEED * dt;
+
+    const nr = player.r + dy * step;
+    const nc = player.c + dx * step;
+
+    if (canMove(nr, player.c)) player.r = nr;
+    if (canMove(player.r, nc)) player.c = nc;
+
+    if (dx || dy) {
+      const want = Math.atan2(dy, dx);
+      const diff = angleDiff(player.angle, want);
+      const maxTurn = 14 * dt;
+      player.angle += Math.max(-maxTurn, Math.min(maxTurn, diff));
+    }
+
+    const pr = Math.floor(player.r), pc = Math.floor(player.c);
+    visited[pr][pc] = 1;
+
+    for (const k of keys) {
+      if (!k.collected && Math.abs(player.r - k.r - 0.5) < 0.55 && Math.abs(player.c - k.c - 0.5) < 0.55) {
+        k.collected = true;
+        keysCollected++;
+      }
+    }
+
+    updateEnemies(dt);
+
+    for (const e of enemies) {
+      if (Math.hypot(e.r - player.r, e.c - player.c) < 0.6) {
+        elMsg.textContent = '✗ Тебя поймали! Уровень заново';
+        gameOver = true;
+        caught = true;
+        updateHUD();
+        return;
+      }
+    }
+
+    if (keysCollected === totalKeys
+      && Math.abs(player.r - exit.r - 0.5) < 0.55
+      && Math.abs(player.c - exit.c - 0.5) < 0.55) {
+      won = true;
+      elMsg.textContent = `✓ Уровень ${level} пройден! ${elapsed.toFixed(1)}с`;
+      gameOver = true;
+    }
+
+    updateHUD();
+  }
+
+  // ── DRAW ──────────────────────────────────────────────────────────────────
+  // The cone of sight is cast by the torch the officer carries: origin sits
+  // slightly in front of the body, the beam is occluded by walls.
+  function drawVision(e) {
+    const chasing = e.state === 'chase';
+    const ox = e.c + Math.cos(e.angle) * 0.26;
+    const oy = e.r + Math.sin(e.angle) * 0.26;
+
+    function beam(halfAngle, reach) {
+      const rays = 26;
+      const pts = [];
+      for (let i = 0; i <= rays; i++) {
+        const ang = e.angle - halfAngle + (i / rays) * halfAngle * 2;
+        const dx = Math.cos(ang), dy = Math.sin(ang);
+        let d = 0;
+        while (d < reach) {
+          const nd = d + 0.1;
+          if (isWall(oy + dy * nd, ox + dx * nd)) break;
+          d = nd;
+        }
+        pts.push([ox + dx * d, oy + dy * d]);
+      }
+      return pts;
+    }
+
+    const outer = beam(DETECT_HALF_ANGLE, DETECT_RADIUS);
+    const core  = beam(DETECT_HALF_ANGLE * 0.42, DETECT_RADIUS * 0.94);
+    const sx = ox * TILE, sy = oy * TILE;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    // soft outer spill
+    const spill = ctx.createRadialGradient(sx, sy, 0, sx, sy, DETECT_RADIUS * TILE);
+    spill.addColorStop(0,    chasing ? 'rgba(255,150,120,0.30)' : 'rgba(255,244,205,0.28)');
+    spill.addColorStop(0.45, chasing ? 'rgba(255,110,90,0.13)'  : 'rgba(255,236,175,0.11)');
+    spill.addColorStop(1,    'rgba(255,230,170,0)');
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    for (const [x, y] of outer) ctx.lineTo(x * TILE, y * TILE);
+    ctx.closePath();
+    ctx.fillStyle = spill;
+    ctx.fill();
+
+    // bright core
+    const hot = ctx.createRadialGradient(sx, sy, 0, sx, sy, DETECT_RADIUS * TILE * 0.8);
+    hot.addColorStop(0,   chasing ? 'rgba(255,190,170,0.42)' : 'rgba(255,253,230,0.40)');
+    hot.addColorStop(0.5, chasing ? 'rgba(255,130,110,0.16)' : 'rgba(255,245,200,0.15)');
+    hot.addColorStop(1,   'rgba(255,240,190,0)');
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    for (const [x, y] of core) ctx.lineTo(x * TILE, y * TILE);
+    ctx.closePath();
+    ctx.fillStyle = hot;
+    ctx.fill();
+
+    // lamp bloom right at the lens
+    const bloom = ctx.createRadialGradient(sx, sy, 0, sx, sy, TILE * 0.65);
+    bloom.addColorStop(0,   'rgba(255,252,225,0.85)');
+    bloom.addColorStop(0.35,'rgba(255,238,170,0.30)');
+    bloom.addColorStop(1,   'rgba(255,235,160,0)');
+    ctx.fillStyle = bloom;
+    ctx.beginPath();
+    ctx.arc(sx, sy, TILE * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // beam edges, so the cone reads as a shape and not a fog
+    ctx.save();
+    const edge = chasing ? 'rgba(255,120,95,0.26)' : 'rgba(255,240,190,0.20)';
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    for (const [x, y] of outer) ctx.lineTo(x * TILE, y * TILE);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function shadowUnder(px, py, scale) {
+    ctx.fillStyle = CLR.shadow;
+    ctx.beginPath();
+    ctx.ellipse(px, py + R*TILE*0.55, R*TILE*1.0*scale, R*TILE*0.5*scale, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Top-down police officer: navy uniform, cap, reflective bands, torch.
+  function drawOfficer(px, py, angle, alerted) {
+    shadowUnder(px, py, 1);
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle + Math.PI / 2);   // local -y becomes the facing direction
+
+    // arms
+    ctx.fillStyle = '#1d2b45';
+    ctx.beginPath();
+    ctx.ellipse(-6.2, -1.5, 2.6, 4.4, 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse( 6.2, -1.5, 2.6, 4.4, -0.28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // torso
+    const body = ctx.createLinearGradient(-6, 0, 6, 0);
+    body.addColorStop(0,   '#16223a');
+    body.addColorStop(0.45,'#26364f');
+    body.addColorStop(1,   '#101a2c');
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(0, 1.2, 6.6, 7.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // reflective bands
+    ctx.fillStyle = 'rgba(226,238,255,0.75)';
+    ctx.fillRect(-6.0, 0.2, 12.0, 1.5);
+    ctx.fillStyle = 'rgba(150,205,255,0.55)';
+    ctx.fillRect(-6.0, 2.1, 12.0, 0.9);
+
+    // shoulder patches
+    ctx.fillStyle = alerted ? '#7fc4ff' : '#4b7fb5';
+    ctx.beginPath(); ctx.arc(-5.2, -2.4, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 5.2, -2.4, 1.5, 0, Math.PI*2); ctx.fill();
+
+    // head
+    ctx.fillStyle = '#c99a72';
+    ctx.beginPath(); ctx.arc(0, -3.4, 4.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.beginPath(); ctx.arc(-1.2, -4.6, 2.4, 0, Math.PI*2); ctx.fill();
+
+    // cap: crown + brim toward the front
+    ctx.fillStyle = '#0e1728';
+    ctx.beginPath(); ctx.arc(0, -3.8, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#16223a';
+    ctx.beginPath(); ctx.ellipse(0, -7.4, 4.3, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = alerted ? '#ffe066' : '#c9d6e6';
+    ctx.beginPath(); ctx.arc(0, -6.4, 1.25, 0, Math.PI * 2); ctx.fill();
+
+    // torch held forward-left
+    ctx.save();
+    ctx.translate(-5.4, -6.2);
+    ctx.rotate(-0.30);
+    ctx.fillStyle = '#20242c';
+    ctx.fillRect(-1.5, -4.2, 3.0, 5.4);
+    ctx.fillStyle = '#3a4050';
+    ctx.fillRect(-1.5, -4.2, 1.0, 5.4);
+    ctx.fillStyle = alerted ? '#ffd9c0' : '#fff6cf';
+    ctx.beginPath(); ctx.ellipse(0, -4.4, 1.6, 1.1, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  // Top-down traveller: wide-brim hat, cloak, backpack, walking staff.
+  function drawTraveler(px, py, angle) {
+    shadowUnder(px, py, 1.05);
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle + Math.PI / 2);
+
+    // backpack (behind the body)
+    ctx.fillStyle = '#4a3a26';
+    ctx.beginPath();
+    ctx.ellipse(0, 5.4, 5.4, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#6b5433';
+    ctx.beginPath(); ctx.ellipse(0, 5.0, 4.0, 2.4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#2e2417';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-3.4, 4.2); ctx.lineTo(-3.4, 7.0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo( 3.4, 4.2); ctx.lineTo( 3.4, 7.0); ctx.stroke();
+
+    // cloak / shoulders
+    const body = ctx.createLinearGradient(-7, 0, 7, 0);
+    body.addColorStop(0,   '#3c5a3a');
+    body.addColorStop(0.45,'#577a4a');
+    body.addColorStop(1,   '#2f4a30');
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(0, 1.0, 6.9, 7.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // cloak seam + hem
+    ctx.strokeStyle = 'rgba(20,32,20,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, 3.2); ctx.lineTo(0, 7.6); ctx.stroke();
+
+    // leather belt
+    ctx.fillStyle = '#7a5a34';
+    ctx.fillRect(-6.2, 0.4, 12.4, 1.7);
+    ctx.fillStyle = '#c9a24a';
+    ctx.fillRect(-1.1, 0.2, 2.2, 2.1);
+
+    // staff at the right hand
+    ctx.strokeStyle = '#8a6a3c';
+    ctx.lineWidth = 1.9;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(7.4, 5.4); ctx.lineTo(6.6, -7.6); ctx.stroke();
+    ctx.fillStyle = '#b8d6a0';
+    ctx.beginPath(); ctx.arc(6.5, -8.0, 1.5, 0, Math.PI*2); ctx.fill();
+
+    // arms
+    ctx.fillStyle = '#3f5f3d';
+    ctx.beginPath(); ctx.ellipse(-6.0, -0.6, 2.4, 4.0, 0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse( 6.0, -0.6, 2.4, 4.0, -0.3, 0, Math.PI*2); ctx.fill();
+
+    // head
+    ctx.fillStyle = '#cf9f76';
+    ctx.beginPath(); ctx.arc(0, -3.2, 4.2, 0, Math.PI * 2); ctx.fill();
+
+    // hair tuft showing under the hat
+    ctx.fillStyle = '#3d2a18';
+    ctx.beginPath(); ctx.arc(0, -1.2, 3.0, 0, Math.PI); ctx.fill();
+
+    // wide-brim hat
+    ctx.fillStyle = '#6d5230';
+    ctx.beginPath(); ctx.ellipse(0, -3.6, 7.0, 6.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#856437';
+    ctx.beginPath(); ctx.ellipse(0, -4.4, 4.0, 3.7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#40301b';
+    ctx.beginPath(); ctx.ellipse(0, -4.4, 4.0, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(30,22,12,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(0, -3.6, 7.0, 6.4, 0, 0, Math.PI * 2); ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawCharacter(px, py, colorInner, colorOuter, angle) {
+    shadowUnder(px, py, 1);
+
+    const grad = ctx.createRadialGradient(px - R*TILE*0.2, py - R*TILE*0.2, 0, px, py, R*TILE);
+    grad.addColorStop(0, colorInner);
+    grad.addColorStop(1, colorOuter);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px, py, R * TILE, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.arc(px - R*TILE*0.28, py - R*TILE*0.28, R*TILE*0.38, 0, Math.PI*2);
+    ctx.fill();
+
+    // facing eyes
+    if (angle !== undefined) {
+      const fx = Math.cos(angle), fy = Math.sin(angle);
+      const ox = -fy, oy = fx;            // perpendicular, for eye spread
+      const spread = R * TILE * 0.34;
+      const forward = R * TILE * 0.42;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#0b0b12';
+        ctx.beginPath();
+        ctx.arc(px + fx*forward + ox*spread*s, py + fy*forward + oy*spread*s,
+                R*TILE*0.20, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ── TEXTURES ──────────────────────────────────────────────────────────────
+  function mulberry32(a) {
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function makeCanvas(w, h) {
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    return cv;
+  }
+
+  // Stone-block wall tiles, drawn once and reused.
+  function generateWallVariants() {
+    const out = [];
+    for (let v = 0; v < 8; v++) {
+      const cv = makeCanvas(TILE, TILE);
+      const g = cv.getContext('2d');
+      const rnd = mulberry32(1301 + v * 977);
+
+      g.fillStyle = '#0c0d11';            // mortar
+      g.fillRect(0, 0, TILE, TILE);
+
+      const rowH = TILE / 2;
+      for (let row = 0; row < 2; row++) {
+        const by = row * rowH + 1;
+        const bh = rowH - 2;
+        const shift = row % 2 ? -TILE / 4 : 0;
+
+        for (let col = 0; col < 3; col++) {
+          const bx = col * (TILE / 2) + shift + 1;
+          const bw = TILE / 2 - 2;
+
+          const tone = 0.72 + rnd() * 0.46;
+          const rr = Math.round(58 * tone);
+          const gg = Math.round(60 * tone);
+          const bb = Math.round(70 * tone);
+
+          g.fillStyle = `rgb(${rr},${gg},${bb})`;
+          g.fillRect(bx, by, bw, bh);
+
+          // bevel
+          g.fillStyle = 'rgba(255,255,255,0.10)';
+          g.fillRect(bx, by, bw, 1);
+          g.fillRect(bx, by, 1, bh);
+          g.fillStyle = 'rgba(0,0,0,0.38)';
+          g.fillRect(bx, by + bh - 1, bw, 1);
+          g.fillRect(bx + bw - 1, by, 1, bh);
+
+          // stone speckle
+          for (let i = 0; i < 14; i++) {
+            g.fillStyle = rnd() > 0.5
+              ? 'rgba(255,255,255,0.055)'
+              : 'rgba(0,0,0,0.22)';
+            g.fillRect(bx + Math.floor(rnd() * bw), by + Math.floor(rnd() * bh), 1, 1);
+          }
+        }
+      }
+
+      // moss patches on some variants
+      if (v % 3 === 0) {
+        for (let i = 0; i < 8; i++) {
+          g.fillStyle = `rgba(74,116,66,${0.09 + rnd() * 0.15})`;
+          g.beginPath();
+          g.arc(rnd() * TILE, rnd() * TILE, 2 + rnd() * 5, 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+
+      out.push(cv);
+    }
+    return out;
+  }
+
+  // Dark earthen floor tiles.
+  function generateFloorVariants() {
+    const out = [];
+    for (let v = 0; v < 8; v++) {
+      const cv = makeCanvas(TILE, TILE);
+      const g = cv.getContext('2d');
+      const rnd = mulberry32(5501 + v * 613);
+
+      g.fillStyle = '#191a20';
+      g.fillRect(0, 0, TILE, TILE);
+
+      for (let i = 0; i < 5; i++) {
+        const x = rnd() * TILE, y = rnd() * TILE, rad = 5 + rnd() * 11;
+        const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+        grd.addColorStop(0, rnd() > 0.5 ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.035)');
+        grd.addColorStop(1, 'transparent');
+        g.fillStyle = grd;
+        g.fillRect(0, 0, TILE, TILE);
+      }
+
+      for (let i = 0; i < 48; i++) {
+        const r3 = rnd();
+        g.fillStyle = r3 > 0.84 ? 'rgba(124,126,138,0.30)'
+                    : r3 > 0.62 ? 'rgba(0,0,0,0.36)'
+                                : 'rgba(255,255,255,0.045)';
+        g.fillRect(Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), 1, 1);
+      }
+
+      if (rnd() > 0.55) {
+        g.strokeStyle = 'rgba(0,0,0,0.30)';
+        g.lineWidth = 1;
+        let x = rnd() * TILE, y = rnd() * TILE;
+        g.beginPath();
+        g.moveTo(x, y);
+        for (let i = 0; i < 4; i++) {
+          x += (rnd() - 0.5) * 13;
+          y += (rnd() - 0.5) * 13;
+          g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+
+      out.push(cv);
+    }
+    return out;
+  }
+
+  // ── VINES (creeping across the floor) ─────────────────────────────────────
+  function buildVines(rnd) {
+    const vines = [];
+    const count = Math.round(floorList.length * 0.55);
+
+    for (let n = 0; n < count; n++) {
+      const [sr, sc] = floorList[Math.floor(rnd() * floorList.length)];
+      let x = (sc + 0.5) * TILE;
+      let y = (sr + 0.5) * TILE;
+      let ang = rnd() * Math.PI * 2;
+
+      const pts = [[x, y]];
+      const steps = 8 + Math.floor(rnd() * 16);
+
+      for (let s = 0; s < steps; s++) {
+        ang += (rnd() - 0.5) * 1.1;
+        const nx = x + Math.cos(ang) * 6;
+        const ny = y + Math.sin(ang) * 6;
+        if (isWall(ny / TILE, nx / TILE)) break;
+        x = nx;
+        y = ny;
+        pts.push([x, y]);
+      }
+      if (pts.length > 3) vines.push(pts);
+    }
+    return vines;
+  }
+
+  function drawVines(g, vines, rnd) {
+    // vine strands
+    for (const pts of vines) {
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+
+      g.strokeStyle = 'rgba(24,48,26,0.85)';
+      g.lineWidth = 3.4;
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+      g.stroke();
+
+      g.strokeStyle = 'rgba(58,104,52,0.75)';
+      g.lineWidth = 1.5;
+      g.stroke();
+
+      // leaves
+      for (let i = 1; i < pts.length; i++) {
+        if (rnd() > 0.45) continue;
+        const [x, y] = pts[i];
+        const [px, py] = pts[i - 1];
+        const a = Math.atan2(y - py, x - px) + (rnd() > 0.5 ? 1 : -1) * 0.9;
+        const lw = 2.4 + rnd() * 1.8;
+        const lh = 1.3 + rnd() * 0.9;
+
+        g.save();
+        g.translate(x, y);
+        g.rotate(a);
+        g.fillStyle = `rgba(${58 + rnd() * 26},${112 + rnd() * 34},${54 + rnd() * 20},0.82)`;
+        g.beginPath();
+        g.ellipse(lw, 0, lw, lh, 0, 0, Math.PI * 2);
+        g.fill();
+        g.restore();
+      }
+    }
+
+    // small moss tufts on the floor
+    for (let i = 0; i < floorList.length * 0.3; i++) {
+      const [r, c] = floorList[Math.floor(rnd() * floorList.length)];
+      const x = c * TILE + rnd() * TILE;
+      const y = r * TILE + rnd() * TILE;
+      g.fillStyle = `rgba(62,106,56,${0.08 + rnd() * 0.16})`;
+      g.beginPath();
+      g.arc(x, y, 1.5 + rnd() * 4, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  // ── PRERENDERED LEVEL BACKGROUND ──────────────────────────────────────────
+  function buildBackground() {
+    if (!WALL_VARIANTS)  WALL_VARIANTS  = generateWallVariants();
+    if (!FLOOR_VARIANTS) FLOOR_VARIANTS = generateFloorVariants();
+
+    bg = makeCanvas(C.width, C.height);
+    const g   = bg.getContext('2d');
+    const rnd = mulberry32(9001 + level * 131);
+
+    // 1. floor
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] !== 0) continue;
+        g.drawImage(FLOOR_VARIANTS[Math.floor(rnd() * FLOOR_VARIANTS.length)],
+                    c * TILE, r * TILE);
+      }
+    }
+
+    // 2. vines creeping over the floor
+    drawVines(g, buildVines(rnd), rnd);
+
+    // 3. wall shadows falling onto the floor
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] === 1) continue;
+        const x = c * TILE, y = r * TILE;
+
+        if (r > 0 && maze[r-1][c] === 1) {
+          const grd = g.createLinearGradient(0, y, 0, y + TILE * 0.6);
+          grd.addColorStop(0, 'rgba(0,0,0,0.55)');
+          grd.addColorStop(1, 'transparent');
+          g.fillStyle = grd;
+          g.fillRect(x, y, TILE, TILE * 0.6);
+        }
+        if (c > 0 && maze[r][c-1] === 1) {
+          const grd = g.createLinearGradient(x, y, x + TILE * 0.45, y);
+          grd.addColorStop(0, 'rgba(0,0,0,0.45)');
+          grd.addColorStop(1, 'transparent');
+          g.fillStyle = grd;
+          g.fillRect(x, y, TILE * 0.45, TILE);
+        }
+        if (c < COLS - 1 && maze[r][c+1] === 1) {
+          const grd = g.createLinearGradient(x + TILE, y, x + TILE * 0.55, y);
+          grd.addColorStop(0, 'rgba(0,0,0,0.40)');
+          grd.addColorStop(1, 'transparent');
+          g.fillStyle = grd;
+          g.fillRect(x + TILE * 0.55, y, TILE * 0.45, TILE);
+        }
+      }
+    }
+
+    // 4. walls
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] !== 1) continue;
+        const x = c * TILE, y = r * TILE;
+        g.drawImage(WALL_VARIANTS[Math.floor(rnd() * WALL_VARIANTS.length)], x, y);
+      }
+    }
+
+    // 5. vines spilling down the face of walls that border open space
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] !== 1) continue;
+        const openAbove = r > 0 && maze[r-1][c] === 0;
+        if (!openAbove) continue;
+
+        const x = c * TILE, y = r * TILE;
+
+        // mossy lip at the top edge
+        g.fillStyle = 'rgba(70,112,60,0.28)';
+        g.fillRect(x, y, TILE, 2);
+
+        const strands = 2 + Math.floor(rnd() * 3);
+        for (let s = 0; s < strands; s++) {
+          const sx = x + 4 + rnd() * (TILE - 8);
+          const len = 5 + rnd() * 13;
+          g.strokeStyle = 'rgba(30,56,30,0.6)';
+          g.lineWidth = 1.4;
+          g.beginPath();
+          g.moveTo(sx, y);
+          g.quadraticCurveTo(sx + (rnd() - 0.5) * 5, y + len * 0.6, sx + (rnd() - 0.5) * 3, y + len);
+          g.stroke();
+
+          g.fillStyle = 'rgba(62,108,54,0.7)';
+          g.beginPath();
+          g.arc(sx + (rnd() - 0.5) * 3, y + len, 1.6 + rnd(), 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+    }
+
+    // 6. crisp rim where walls meet open floor
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] !== 1) continue;
+        const x = c * TILE, y = r * TILE;
+        if (r < ROWS - 1 && maze[r+1][c] === 0) {
+          g.fillStyle = 'rgba(0,0,0,0.45)';
+          g.fillRect(x, y + TILE - 2, TILE, 2);
+          g.fillStyle = 'rgba(255,255,255,0.05)';
+          g.fillRect(x, y + TILE - 3, TILE, 1);
+        }
+        if (c < COLS - 1 && maze[r][c+1] === 0) {
+          g.fillStyle = 'rgba(0,0,0,0.35)';
+          g.fillRect(x + TILE - 2, y, 2, TILE);
+        }
+        if (r > 0 && maze[r-1][c] === 0) {
+          g.fillStyle = 'rgba(255,255,255,0.04)';
+          g.fillRect(x, y, TILE, 1);
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, C.width, C.height);
+
+    // prerendered stone + vines
+    ctx.drawImage(bg, 0, 0);
+
+    // explored trail
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] === 0 && visited[r][c]) {
+          ctx.fillStyle = CLR.visited;
+          ctx.fillRect(c * TILE, r * TILE, TILE, TILE);
+        }
+      }
+    }
+
+    // enemy vision
+    for (const e of enemies) drawVision(e);
+
+    // exit
+    {
+      const x = exit.c * TILE, y = exit.r * TILE;
+      const allKeys = keysCollected === totalKeys;
+      ctx.fillStyle = allKeys ? CLR.exit : '#333';
+      ctx.beginPath();
+      roundRect(ctx, x + 4, y + 4, TILE - 8, TILE - 8, 4);
+      ctx.fill();
+      if (allKeys) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.fillStyle = allKeys ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.2)';
+      ctx.font = `${TILE * 0.45}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('▶', x + TILE/2, y + TILE/2);
+    }
+
+    // keys
+    for (const k of keys) {
+      if (k.collected) continue;
+      const x = k.c * TILE + TILE/2, y = k.r * TILE + TILE/2;
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, TILE * 0.55);
+      grd.addColorStop(0, CLR.keyGlow);
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(k.c * TILE, k.r * TILE, TILE, TILE);
+      ctx.fillStyle = CLR.key;
+      ctx.font = `${TILE * 0.5}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⬡', x, y);
+    }
+
+    // enemies
+    for (const e of enemies) {
+      drawOfficer(e.c * TILE, e.r * TILE, e.angle, e.state === 'chase');
+    }
+
+    // player
+    drawTraveler(player.c * TILE, player.r * TILE, player.angle);
+  }
+
+  function drawPauseOverlay() {
+    ctx.fillStyle = 'rgba(8,8,14,0.62)';
+    ctx.fillRect(0, 0, C.width, C.height);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = CLR.player;
+    ctx.font = '600 26px system-ui, sans-serif';
+    ctx.fillText('ПАУЗА', C.width / 2, C.height / 2 - 14);
+    ctx.fillStyle = 'oklch(62% 0.01 260)';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Shift — продолжить', C.width / 2, C.height / 2 + 20);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ── LOOP ──────────────────────────────────────────────────────────────────
+  function loop(ts) {
+    if (lastTime === null) lastTime = ts;
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+
+    if (!gameOver && !paused) update(dt);
+    draw();
+    if (paused) drawPauseOverlay();
+
+    if (!gameOver) {
+      raf = requestAnimationFrame(loop);
+    } else if (won) {
+      setTimeout(() => {
+        if (state !== 'playing') return;
+        level++;
+        initLevel();
+        lastTime = null;
+        raf = requestAnimationFrame(loop);
+      }, 1200);
+    } else if (caught) {
+      setTimeout(() => {
+        if (state !== 'playing') return;
+        initLevel();
+        lastTime = null;
+        raf = requestAnimationFrame(loop);
+      }, 1200);
+    }
+  }
+
+  // ── SCREENS ───────────────────────────────────────────────────────────────
+  const elMenu     = document.getElementById('menu');
+  const elSettings = document.getElementById('settings');
+  const elGame     = document.getElementById('game');
+  const elDiffHint = document.getElementById('diff-hint');
+  const diffButtons = Array.from(document.querySelectorAll('.diff'));
+
+  let state = 'menu';           // menu | settings | playing
+
+  const DIFF_HINTS = {
+    easy:   'Широкие коридоры, короткий луч фонарика — заметить тебя издалека не получится. Хорошо для первого прохождения.',
+    normal: 'Сбалансированный лабиринт и обычные патрули: луч достаёт примерно на шесть клеток.',
+    hard:   'Тесный лабиринт с длинными узкими переходами, а фонарики офицеров бьют далеко и широко.',
+  };
+
+  function setDifficulty(key) {
+    difficultyKey = key;
+    D = DIFFICULTIES[key];
+    COLS = D.cols;
+    ROWS = D.rows;
+    DETECT_RADIUS = D.detectRadius;
+    DETECT_HALF_ANGLE = D.detectHalfAngle;
+
+    for (const b of diffButtons) {
+      b.setAttribute('aria-checked', String(b.dataset.diff === key));
+    }
+    elDiffHint.textContent = DIFF_HINTS[key] || '';
+    try { localStorage.setItem('maze.difficulty', key); } catch (_) {}
+  }
+
+  function showScreen(name) {
+    state = name;
+    elMenu.classList.toggle('hidden',     name !== 'menu');
+    elSettings.classList.toggle('hidden', name !== 'settings');
+    elGame.classList.toggle('hidden',     name !== 'playing');
+
+    // moving between screens must not leave stale movement keys held down
+    for (const k of Object.keys(pressed)) pressed[k] = false;
+
+    if (name !== 'playing') {
+      cancelAnimationFrame(raf);
+      paused = false;
+    }
+  }
+
+  function startGame() {
+    showScreen('playing');
+    level = 1;
+    paused = false;
+    initLevel();
+    lastTime = null;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+  }
+
+  document.getElementById('btn-play').addEventListener('click', startGame);
+
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    showScreen('settings');
+  });
+
+  document.getElementById('btn-settings-back').addEventListener('click', () => {
+    showScreen('menu');
+  });
+
+  for (const b of diffButtons) {
+    b.addEventListener('click', () => setDifficulty(b.dataset.diff));
+  }
+
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    cancelAnimationFrame(raf);
+    level = 1;
+    paused = false;
+    initLevel();
+    lastTime = null;
+    raf = requestAnimationFrame(loop);
+  });
+
+  // Esc returns to the menu from anywhere
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (state === 'playing') {
+      showScreen('menu');
+    } else if (state === 'settings') {
+      showScreen('menu');
+    }
+  });
+
+  // ── BOOT ──────────────────────────────────────────────────────────────────
+  let saved = 'normal';
+  try {
+    const v = localStorage.getItem('maze.difficulty');
+    if (v && DIFFICULTIES[v]) saved = v;
+  } catch (_) {}
+  setDifficulty(saved);
+
+  C.width  = COLS * TILE;
+  C.height = ROWS * TILE;
+  showScreen('menu');
+
+  // Register service worker for offline / installable PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
