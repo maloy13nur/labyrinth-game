@@ -510,6 +510,37 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* Browsers block remote audio until the page has seen a real click or
+     keypress.  When that happens the user hears nothing and has no way to
+     tell why, so say it out loud and give them one button. */
+  .unlock {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 10px 0;
+    padding: 10px 14px;
+    background: oklch(24% 0.06 55);
+    border: 1px solid oklch(46% 0.11 55);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+  .unlock[hidden] { display: none; }
+  .unlock span { flex: 1; }
+  .unlock button {
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: none;
+    background: oklch(78% 0.15 55);
+    color: oklch(16% 0.03 55);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .unlock button:hover { background: oklch(84% 0.14 55); }
+
   @media (max-width: 720px) {
     .chat { width: 100%; position: absolute; inset: 49px 0 0; z-index: 4; }
     .ctl { width: 58px; }
@@ -578,9 +609,13 @@
     </button>
   </div>
 
+  <div class="unlock" id="unlock" hidden>
+    <span>Браузер заглушил звук собеседника. Нажмите, чтобы включить.</span>
+    <button type="button" id="btn-unlock">Включить звук</button>
+  </div>
+
   <div class="stage">
-    <div class="grid" id="grid"></div>
-    <aside class="chat hidden" id="chat">
+    <div class="grid" id="grid"></div>    <aside class="chat hidden" id="chat">
       <div class="chat-head">Чат</div>
       <div class="chat-log" id="chat-log"></div>
       <form class="chat-form" id="chat-form">
@@ -1719,6 +1754,7 @@
     video.autoplay = true;
     video.playsInline = true;
     video.muted = true;              // sound comes from the separate <audio>
+    video.style.display = 'none';    // until the person actually sends a picture
     el.appendChild(video);
 
     const av = document.createElement('div');
@@ -1726,6 +1762,19 @@
     av.textContent = initials(name || '??');
     av.style.background = colorFor(id);
     el.appendChild(av);
+
+    // Safety net for when the "state" message never arrives (for example the
+    // data channel dropped): reveal as soon as real frames appear.  The idle
+    // placeholder is a 2x2 canvas, so a small threshold tells them apart.
+    const revealOnFrames = () => {
+      if (video.videoWidth > 16 && video.videoHeight > 16) {
+        video.style.display = 'block';
+        av.style.display = 'none';
+      }
+    };
+    video.addEventListener('loadedmetadata', revealOnFrames);
+    video.addEventListener('resize', revealOnFrames);
+    video.addEventListener('playing', revealOnFrames);
 
     const plate = document.createElement('div');
     plate.className = 'nameplate';
@@ -1747,38 +1796,85 @@
     r.av.textContent = initials(r.name);
   }
 
+  // ── REMOTE AUDIO ──────────────────────────────────────────────────────────
+  // Chrome refuses to start an <audio> element that was never touched by a
+  // user until the page has seen a click or a keypress.  In a call that lands
+  // as "I hear nothing at all" with no hint of why, so every play() failure
+  // is tracked, retried on the next gesture, and surfaced as a banner.
+  let audioBlocked = false;
+
+  function showUnlock(on) {
+    audioBlocked = on;    const el = document.getElementById('unlock');
+    if (el) el.hidden = !on;
+  }
+
+  function playRemoteAudio(r) {
+    if (!r.audio || !r.audio.srcObject) return;
+    const p = r.audio.play();
+    if (!p || !p.then) return;
+    p.then(() => {
+      // Hide the banner once nothing that has audio is still paused.
+      const stuck = [...remotes.values()]
+        .some((x) => x.audio && x.audio.srcObject && x.audio.paused);
+      if (!stuck) showUnlock(false);
+    }).catch(() => {
+      showUnlock(true);
+    });
+  }
+
+  function playAllRemoteAudio() {
+    for (const r of remotes.values()) playRemoteAudio(r);
+  }
+
+  // The first real gesture anywhere unlocks playback for every peer at once,
+  // so in practice the banner is only a fallback.
+  let gestureArmed = true;
+  function armAudioUnlock() {
+    if (!gestureArmed) return;
+    gestureArmed = false;
+    const onGesture = () => {
+      playAllRemoteAudio();
+      gestureArmed = true;
+    };
+    document.addEventListener('pointerdown', onGesture, { once: true, capture: true });
+    document.addEventListener('keydown', onGesture, { once: true, capture: true });
+  }
+
   function attachRemoteStream(id, stream, name) {
     const r = ensureRemote(id, name);
     r.stream = stream;
     if (r.video.srcObject !== stream) r.video.srcObject = stream;
     r.video.play().catch(() => {});
 
-    // Audio lives in its own element: the tile is muted so local playback
-    // is never needed, and the separate element keeps the browser happy.
+    // Audio lives in its own element, because the tile <video> is muted and a
+    // muted element is the one thing a browser never blocks.
     if (!r.audio) {
       const au = document.createElement('audio');
       au.autoplay = true;
+      au.playsInline = true;
       au.style.display = 'none';
       r.el.appendChild(au);
       r.audio = au;
     }
     if (r.audio.srcObject !== stream) r.audio.srcObject = stream;
-    r.audio.play().catch(() => {
-      // Autoplay was blocked — retry on the next click anywhere.
-      const retry = () => { r.audio.play().catch(() => {}); };
-      document.addEventListener('click', retry, { once: true });
-    });
+    playRemoteAudio(r);
+    armAudioUnlock();
 
     updateRemoteVisual(r);
   }
 
   function updateRemoteVisual(r) {
-    const hasVideo = r.stream && r.stream.getVideoTracks().some(t => t.readyState === 'live') && (r.sharing || r.camOn !== false);
-    // A remote always sends a video track (black placeholder when idle),
-    // so show the element; the sharing flag only changes the framing.
+    // Both sides always send a video track — a black 2x2 canvas stands in for
+    // "no camera".  Showing that placeholder paints a black rectangle over the
+    // person's initials, which reads as "I cannot see them".  Only show the
+    // video element when the other side says it has a picture to send.
+    const picture = r.sharing === true || r.camOn === true;
+
     r.el.classList.toggle('sharing', !!r.sharing);
-    r.av.style.display = 'none';
-    r.video.style.display = 'block';
+    r.video.style.display = picture ? 'block' : 'none';
+    r.av.style.display = picture ? 'none' : 'flex';
+
+    if (picture && r.video.paused) r.video.play().catch(() => {});
 
     let mark = r.plate.querySelector('.mic-off');
     if (r.mic === false) {
@@ -1892,6 +1988,10 @@
       conns.set(conn.peer, conn);
       dialing.delete(conn.peer);
       conn.send({ t: 'hello', name: myName });
+      // Tell the newcomer what this side is already doing.  Without this the
+      // other person sees initials forever when the camera was switched on
+      // before the connection existed.
+      conn.send({ t: 'state', name: myName, mic: micOn, cam: camOn, sharing });
       if (!calls.has(conn.peer)) callPeer(conn.peer);
     });
 
@@ -2312,6 +2412,13 @@
 
   $('#btn-leave').addEventListener('click', () => leaveRoom(false));
 
+  // Chrome blocks remote audio until the page has seen a real gesture. This
+  // button is that gesture; the banner only appears when a play() was refused.
+  $('#btn-unlock').addEventListener('click', () => {
+    showUnlock(false);
+    playAllRemoteAudio();
+  });
+
   // chat
   const toggleChat = () => $('#chat').classList.toggle('hidden');
   $('#btn-chat-top').addEventListener('click', toggleChat);
@@ -2426,6 +2533,8 @@
       };
     }),
     peerRef: () => peer,
+    get micStream() { return micStream; },
+    get camStream() { return camStream; },
     trace: () => (peer && peer._trace ? peer._trace : []),
     raw: () => (peer && peer.mqtt && peer.mqtt.raw ? peer.mqtt.raw : []),
   };
