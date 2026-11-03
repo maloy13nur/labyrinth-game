@@ -107,11 +107,36 @@
       justify-content: center;
       gap: 14px;
       padding: 24px;
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 42%, oklch(20% 0.03 250), transparent 72%),
-        radial-gradient(ellipse 55% 45% at 50% 110%, oklch(22% 0.05 145 / 0.30), transparent 70%),
-        var(--bg);
+      background: var(--bg);
+      overflow: hidden;
     }
+
+    /* blurred maze backdrop — only on the main menu */
+    #menu::before {
+      content: '';
+      position: absolute;
+      inset: -40px;
+      z-index: 0;
+      background-image: url('bg.png');
+      background-size: cover;
+      background-position: center;
+      filter: blur(7px) brightness(0.38) saturate(0.7);
+      transform: scale(1.08);
+    }
+
+    /* dark colour overlay so the text stays readable */
+    #menu::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 72% 58% at 50% 44%, oklch(14% 0.02 250 / 0.82), transparent 72%),
+        radial-gradient(ellipse 55% 45% at 50% 108%, oklch(16% 0.04 145 / 0.45), transparent 70%);
+    }
+
+    /* push all menu children above the pseudo-element layers */
+    #menu > * { position: relative; z-index: 1; }
     .screen.hidden, #game.hidden { display: none; }
 
     .screen h2 {
