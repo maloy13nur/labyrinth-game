@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лабиринт — скачать игру</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         oklch(12% 0.01 260);
+      --surface:    oklch(17% 0.015 260);
+      --border:     oklch(26% 0.02 260);
+      --text:       oklch(92% 0.01 260);
+      --muted:      oklch(54% 0.01 260);
+      --accent:     oklch(72% 0.18 145);
+      --accent-dim: oklch(52% 0.14 145);
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 38%, oklch(20% 0.04 145 / 0.28), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 50% 90%, oklch(18% 0.03 250 / 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow:
+        0 0 0 1px oklch(100% 0 0 / 0.04) inset,
+        0 24px 64px oklch(0% 0 0 / 0.55);
+    }
+
+    .icon-wrap {
+      width: 108px;
+      height: 108px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 28px oklch(0% 0 0 / 0.50);
+      margin-bottom: 28px;
+      flex-shrink: 0;
+    }
+
+    .icon-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      text-shadow: 0 0 28px oklch(72% 0.18 145 / 0.30);
+      margin-bottom: 6px;
+    }
+
+    .tagline {
+      font-size: 0.875rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 32px;
+    }
+
+    .features {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .feat {
+      background: oklch(20% 0.012 260);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .feat strong {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 28px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      text-decoration: none;
+      justify-content: center;
+      transition: background 140ms ease, box-shadow 140ms ease, transform 90ms ease;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      color: oklch(12% 0.01 260);
+      box-shadow: 0 4px 20px oklch(72% 0.18 145 / 0.22);
+    }
+    .btn-primary:hover {
+      background: var(--accent);
+      box-shadow: 0 6px 28px oklch(72% 0.18 145 / 0.38);
+    }
+
+    .btn-secondary {
+      background: oklch(21% 0.015 260);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover {
+      background: oklch(26% 0.02 260);
+      border-color: oklch(38% 0.025 260);
+    }
+
+    .btn svg {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    .note {
+      font-size: 0.76rem;
+      color: oklch(42% 0.01 260);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+
+    .controls {
+      width: 100%;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .controls span {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .keys {
+      display: flex;
+      gap: 4px;
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 1px 7px;
+      background: oklch(21% 0.015 260);
+      border: 1px solid oklch(32% 0.02 260);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-wrap">
+      <img src="icon-512.png" alt="Иконка: путешественник с жестом ОК">
+    </div>
+
+    <h1>ЛАБИРИНТ</h1>
+    <div class="tagline">выберись из катакомб — не попадись полицейским</div>
+
+    <div class="features">
+      <div class="feat">
+        <strong>Процедурные уровни</strong>
+        Каждый лабиринт генерируется заново
+      </div>
+      <div class="feat">
+        <strong>Полицейские с фонарями</strong>
+        Конус обзора, BFS-погоня, три режима
+      </div>
+      <div class="feat">
+        <strong>Три сложности</strong>
+        17×17 до 25×25, разный обзор, больше стражей
+      </div>
+      <div class="feat">
+        <strong>Один HTML-файл</strong>
+        Без установки, без интернета
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="maze.html" target="_blank">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5,3 19,10 5,17" fill="currentColor" stroke="none"/>
+        </svg>
+        Играть в браузере
+      </a>
+      <a class="btn btn-secondary" href="maze.html" download="Лабиринт.html">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2v10M6 8l4 4 4-4"/>
+          <path d="M3 15v1a2 2 0 002 2h10a2 2 0 002-2v-1"/>
+        </svg>
+        Скачать файл
+      </a>
+    </div>
+
+    <p class="note">
+      Скачай один HTML-файл и открой в браузере — больше ничего не нужно.<br>
+      Работает в Chrome, Edge, Firefox, Safari.
+    </p>
+
+    <div class="divider"></div>
+
+    <div class="controls">
+      <span><span>Движение</span>   <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span>
+      <span><span>Пауза</span>      <span><kbd>Shift</kbd></span></span>
+      <span><span>В меню</span>     <span><kbd>Esc</kbd></span></span>
+      <span><span>Цель</span>       <span>собери ключи → найди выход</span></span>
+    </div>
+  </div>
+</body>
+</html>
