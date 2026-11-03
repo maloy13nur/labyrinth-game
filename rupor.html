@@ -1370,6 +1370,10 @@
 
   const $ = (s) => document.querySelector(s);
 
+  // Public address of the app, used when a copied invite cannot be a direct
+  // link to this copy (a file:// window has no origin).
+  const PUBLIC_URL = 'https://maloy13nur.github.io/labyrinth-game/rupor.html';
+
   // ── QUALITY PRESETS ───────────────────────────────────────────────────────
   // maxBitrate is per viewer in a mesh: N people => (N-1)x this number upstream.
   const QUALITY = {
@@ -2282,6 +2286,18 @@
 
   // copy invite link
   $('#code-copy').addEventListener('click', () => {
+    // Under file:// (the .exe launcher) location.origin is "null", so there is
+    // no address that would open this copy on someone else's machine.  Hand out
+    // the code and the public page instead of a dead file:// link.
+    const isWeb = /^https?:$/.test(location.protocol);
+    if (!isWeb) {
+      const text = `Код комнаты: ${roomCode}\nОткройте Рупор: ${PUBLIC_URL}`;
+      navigator.clipboard.writeText(text).then(
+        () => toast('Код и адрес программы скопированы'),
+        () => toast(`Код комнаты: ${roomCode}`)
+      );
+      return;
+    }
     const url = `${location.origin}${location.pathname}?room=${roomCode}`;
     navigator.clipboard.writeText(url).then(
       () => toast('Ссылка-приглашение скопирована'),
