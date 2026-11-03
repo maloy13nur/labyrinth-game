@@ -46,6 +46,402 @@
 
   .hidden { display: none !important; }
 
+  /* ══ ACCOUNT, FRIENDS, GROUPS ══════════════════════════════════ */
+  #social {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    background: var(--bg);
+  }
+
+  .social-side {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+  }
+
+  .me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .me-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: oklch(13% 0.02 285);
+    background: var(--accent);
+  }
+
+  .me-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .me-text b {
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .me-text span {
+    font-size: 0.72rem;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .me-out {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .me-out:hover { color: var(--danger); border-color: var(--danger); }
+
+  .side-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 10px 0;
+  }
+
+  .side-tab {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .side-tab.on { background: var(--panel-2); color: var(--text); }
+  .side-tab b {
+    display: inline-block;
+    min-width: 17px;
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.66rem;
+    line-height: 17px;
+  }
+
+  .side-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    min-height: 0;
+  }
+
+  .side-empty {
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 14px 8px;
+    text-align: center;
+  }
+
+  .side-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 6px 6px;
+  }
+
+  .person {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 6px;
+    border-radius: 8px;
+  }
+  .person:hover { background: var(--panel-2); }
+
+  .person .ava {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: oklch(13% 0.02 285);
+  }
+
+  .person .ava i {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--panel);
+    background: var(--muted);
+  }
+  .person .ava i.on { background: var(--ok); }
+
+  .person .who {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.84rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .person .who small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.68rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .person .act {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  .person .act:hover { border-color: var(--accent); }
+  .person .act.call { border-color: var(--ok); color: var(--ok); }
+  .person .act.no { color: var(--muted); }
+  .person .act.no:hover { border-color: var(--danger); color: var(--danger); }
+
+  .side-actions {
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+  }
+
+  .side-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.82rem;
+  }
+  .side-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px oklch(66% 0.19 285 / 0.18);
+  }
+
+  .side-btn {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .side-btn:hover { border-color: var(--accent); }
+
+  .social-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .social-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .social-head h2 { font-size: 1.05rem; font-weight: 700; flex: 1; }
+
+  .btn.narrow { width: auto; padding: 9px 16px; font-size: 0.82rem; }
+
+  .social-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    max-width: 720px;
+    width: 100%;
+  }
+
+  .social-hint {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+  }
+
+  .group-create {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .group-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px;
+    margin-top: 12px;
+    background: var(--panel);
+  }
+
+  .group-card header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .group-card header b { flex: 1; font-size: 0.9rem; }
+
+  .group-code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--accent-2);
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border: 1px dashed var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .group-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--panel-2);
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  .invite-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--ok);
+    border-radius: 10px;
+    background: oklch(70% 0.16 155 / 0.08);
+  }
+  .invite-card span { flex: 1; font-size: 0.84rem; }
+
+  #auth {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: oklch(6% 0.01 275 / 0.82);
+    backdrop-filter: blur(4px);
+    overflow-y: auto;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .auth-tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .auth-tab.on { background: var(--panel-2); color: var(--text); }
+
+  .auth-note {
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  #setup-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  #setup-fields label {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  #setup-fields .field {
+    font-family: ui-monospace, monospace;
+    font-size: 0.74rem;
+  }
+
+  @media (max-width: 720px) {
+    #social { flex-direction: column; }
+    .social-side {
+      width: 100%;
+      max-height: 46%;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .social-body { padding: 16px; }
+  }
+
   /* ══ HOME ══════════════════════════════════════════════════════ */
   #home {
     position: fixed;
@@ -654,6 +1050,122 @@
 <body>
 
 <!-- ══ HOME ══ -->
+<div id="social" class="hidden">
+  <aside class="social-side">
+    <div class="me" id="me-box">
+      <div class="me-avatar" id="me-avatar">?</div>
+      <div class="me-text">
+        <b id="me-name">Гость</b>
+        <span id="me-tag">без аккаунта</span>
+      </div>
+      <button class="me-out" id="btn-signout" title="Выйти из аккаунта" hidden>×</button>
+    </div>
+
+    <div class="side-tabs">
+      <button class="side-tab on" data-tab="friends">Друзья <b id="badge-friends" hidden></b></button>
+      <button class="side-tab" data-tab="groups">Группы</button>
+    </div>
+
+    <div class="side-list" id="side-friends">
+      <div class="side-empty" id="friends-empty">Пока никого нет.<br>Добавьте друга по имени.</div>
+      <div class="side-group" id="incoming-wrap" hidden>
+        <div class="side-label">Заявки</div>
+        <div id="incoming"></div>
+      </div>
+      <div class="side-group" id="friends-wrap" hidden>
+        <div class="side-label">Друзья</div>
+        <div id="friends"></div>
+      </div>
+      <div class="side-group" id="outgoing-wrap" hidden>
+        <div class="side-label">Отправленные</div>
+        <div id="outgoing"></div>
+      </div>
+    </div>
+
+    <div class="side-list hidden" id="side-groups">
+      <div class="side-empty" id="groups-empty">Групп нет.<br>Создайте или войдите по коду.</div>
+      <div id="groups"></div>
+    </div>
+
+    <div class="side-actions">
+      <input class="side-input" id="friend-name" placeholder="Имя друга" maxlength="24" autocomplete="off">
+      <button class="side-btn" id="btn-add-friend">Добавить</button>
+    </div>
+  </aside>
+
+  <main class="social-main">
+    <div class="social-head">
+      <h2 id="main-title">Друзья</h2>
+      <button class="btn primary narrow" id="btn-new-room">Создать комнату</button>
+    </div>
+
+    <div class="social-body">
+      <div id="panel-friends">
+        <p class="social-hint">
+          Добавьте друга по имени — он появится здесь, и вы сможете позвать его в комнату одной кнопкой.
+          Друзья видны с любого устройства, где вы вошли в свой аккаунт.
+        </p>
+        <div id="invites"></div>
+      </div>
+
+      <div id="panel-groups" class="hidden">
+        <p class="social-hint">
+          Группа — это общий список людей и одна постоянная комната. Код группы можно передать
+          кому угодно: он вступит сам.
+        </p>
+        <div class="group-create">
+          <input class="side-input" id="group-name" placeholder="Название группы" maxlength="60" autocomplete="off">
+          <button class="side-btn" id="btn-create-group">Создать</button>
+        </div>
+        <div class="group-create">
+          <input class="side-input" id="group-code" placeholder="Код группы" maxlength="8" autocomplete="off" spellcheck="false">
+          <button class="side-btn" id="btn-join-group">Войти</button>
+        </div>
+        <div id="groups-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ AUTH ══ -->
+<div id="auth" class="hidden">
+  <div class="entry">
+    <div class="auth-tabs">
+      <button class="auth-tab on" data-mode="in">Вход</button>
+      <button class="auth-tab" data-mode="up">Регистрация</button>
+    </div>
+
+    <label for="auth-user">Имя</label>
+    <input class="field" id="auth-user" maxlength="24" placeholder="ваше имя" autocomplete="username" spellcheck="false">
+
+    <label for="auth-pass">Пароль</label>
+    <input class="field" id="auth-pass" type="password" maxlength="72" placeholder="не короче 6 символов" autocomplete="current-password">
+
+    <label for="auth-display" id="label-display" class="hidden">Как показывать</label>
+    <input class="field hidden" id="auth-display" maxlength="24" placeholder="Имя в списке" autocomplete="off">
+
+    <div id="setup-fields" class="hidden">
+      <label for="setup-url">Адрес проекта Supabase</label>
+      <input class="field" id="setup-url" placeholder="https://abcdefgh.supabase.co" autocomplete="off" spellcheck="false">
+
+      <label for="setup-key">Ключ anon public</label>
+      <input class="field" id="setup-key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false">
+    </div>
+
+    <button class="btn primary" id="btn-auth-go">Войти</button>
+    <button class="btn" id="btn-auth-cancel">Отмена</button>
+
+    <p class="auth-note" id="auth-note-default">
+      Пароль защищает аккаунт. Почту указывать не нужно — она не используется и не проверяется.
+    </p>
+    <p class="auth-note hidden" id="auth-note-setup">
+      Возьмите оба значения в Supabase → Project Settings → API. Они не секретны:
+      ключ anon предназначен для браузера, а доступ к данным ограничивают правила базы.
+    </p>
+    <div class="err" id="auth-err"></div>
+  </div>
+</div>
+
 <div id="home">
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -676,6 +1188,11 @@
     <label for="code">Код комнаты</label>
     <input class="field code" id="code" maxlength="6" placeholder="ABC123" autocomplete="off" spellcheck="false">
     <button class="btn" id="btn-join">Войти по коду</button>
+
+    <div class="or">аккаунт</div>
+
+    <button class="btn" id="btn-account">Войти в аккаунт</button>
+    <button class="btn hidden" id="btn-social">Друзья и группы</button>
 
     <button class="btn install" id="btn-install" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px">
@@ -2838,12 +3355,30 @@
 
   // Expose a tiny hook for smoke tests.
   window.__rup = {
+    // Entry points for the account panel: it lives in a separate script and
+    // must be able to start a call without duplicating the room logic.
+    createRoom(name) {
+      myName = normalizeName(name || 'Гость');
+      const code = makeCode(6);
+      $('#home').classList.add('hidden');
+      startPeer(code, true);
+      return code;
+    },
+    joinRoom(code, name) {
+      const clean = String(code || '').trim().toUpperCase();
+      if (!/^[A-Z0-9]{4,8}$/.test(clean)) return false;
+      myName = normalizeName(name || 'Гость');
+      $('#home').classList.add('hidden');
+      startPeer(clean, false);
+      return true;
+    },
     get state() { return { roomCode, isHost, myId, peers: remotes.size, micOn, camOn, sharing }; },
     qualityKey: () => qualityKey,
     QUALITY,
     makeCode,
     normalizeName,
     initials,
+    toast,
     debug: () => [...calls.entries()].map(([id, mc]) => {
       const pc = mc.peerConnection;
       return {
@@ -2925,5 +3460,1214 @@
   })();
 })();
 </script>
+<!-- social:begin -->
+<script>
+/* Accounts, friends and groups for Рупор.
+
+   Video and audio still travel directly between browsers; this layer only
+   stores the social graph — who you are, who your friends are, which groups
+   you belong to.  It talks to Supabase over plain HTTPS with fetch(), so the
+   page stays a single file with no external scripts.
+
+   Nothing here runs until a project URL and key are configured below.  Until
+   then `Rupor.api.ready === false` and the interface falls back to the
+   no-account mode that always worked. */
+(function (global) {
+  'use strict';
+
+  // ── CONFIGURATION ─────────────────────────────────────────────────────────
+  // Fill these two in from Supabase → Project Settings → API.
+  // Both are safe to publish: the anon key is designed for browsers, and row
+  // level security decides what each signed-in user may read or write.
+  // They can also be set at runtime without rebuilding the file:
+  //   localStorage.rup_supabase = '{"url":"https://xxx.supabase.co","key":"..."}'
+  const FALLBACK = { url: '', key: '' };
+
+  function config() {
+    try {
+      const raw = global.localStorage && global.localStorage.getItem('rup_supabase');
+      if (raw) {
+        const j = JSON.parse(raw);
+        if (j && j.url && j.key) return { url: String(j.url).replace(/\/+$/, ''), key: String(j.key) };
+      }
+    } catch (_) {}
+    return { url: FALLBACK.url, key: FALLBACK.key };
+  }
+
+  const SESSION_KEY = 'rup_session';
+  const PROFILE_KEY = 'rup_profile';
+
+  let session = null;    // { access_token, refresh_token, user: { id } }
+  let profile = null;    // { id, username, display_name, color }
+  let cfg = config();
+
+  const listeners = {};
+  function on(ev, fn) { (listeners[ev] || (listeners[ev] = [])).push(fn); return api; }
+  function emit(ev, arg) {
+    for (const fn of listeners[ev] || []) { try { fn(arg); } catch (e) { console.error(e); } }
+  }
+
+  function loadStored() {
+    try {
+      const s = global.localStorage.getItem(SESSION_KEY);
+      if (s) session = JSON.parse(s);
+      const p = global.localStorage.getItem(PROFILE_KEY);
+      if (p) profile = JSON.parse(p);
+    } catch (_) { session = null; profile = null; }
+  }
+
+  function storeSession(s) {
+    session = s;
+    try {
+      if (s) global.localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+      else global.localStorage.removeItem(SESSION_KEY);
+    } catch (_) {}
+  }
+
+  function storeProfile(p) {
+    profile = p;
+    try {
+      if (p) global.localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+      else global.localStorage.removeItem(PROFILE_KEY);
+    } catch (_) {}
+  }
+
+  // ── HTTP ──────────────────────────────────────────────────────────────────
+  // A token that expired mid-session would otherwise look like a random 401,
+  // so every authorised call refreshes once before giving up.
+  async function request(path, opts, retried) {
+    if (!cfg.url || !cfg.key) throw new Error('NOT_CONFIGURED');
+
+    const headers = Object.assign(
+      { apikey: cfg.key, 'Content-Type': 'application/json' },
+      (opts && opts.headers) || {}
+    );
+    if (session && session.access_token) {
+      headers.Authorization = 'Bearer ' + session.access_token;
+    }
+
+    const res = await fetch(cfg.url + path, Object.assign({}, opts, { headers }));
+
+    if (res.status === 401 && !retried && session && session.refresh_token) {
+      const ok = await refresh();
+      if (ok) return request(path, opts, true);
+    }
+
+    const text = await res.text();
+    let body = null;
+    if (text) { try { body = JSON.parse(text); } catch (_) { body = text; } }
+
+    if (!res.ok) {
+      const msg = (body && (body.message || body.error_description || body.msg || body.hint)) || ('HTTP ' + res.status);
+      const err = new Error(msg);
+      err.status = res.status;
+      err.body = body;
+      throw err;
+    }
+    return body;
+  }
+
+  async function refresh() {
+    if (!session || !session.refresh_token) return false;
+    try {
+      const res = await fetch(cfg.url + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body || !body.access_token) return false;
+
+      // The refresh response normally repeats the user, but relying on that
+      // would blank the id if it ever did not — and every query is keyed by it.
+      const prev = session.user || {};
+      const next = body.user || {};
+      storeSession({
+        access_token: body.access_token,
+        refresh_token: body.refresh_token || session.refresh_token,
+        user: {
+          id: next.id || prev.id,
+          email: next.email || prev.email,
+        },
+      });
+      return true;
+    } catch (_) { return false; }
+  }
+
+  function rest(path, opts) {
+    return request('/rest/v1' + path, opts);
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  // Email and password, but the email is never shown or used for mail: it is
+  // derived from the username so signing in needs nothing but a name and a
+  // password.  Confirmation is off, so no message has to arrive anywhere.
+  const DOMAIN = 'rupor.local';
+  const emailFor = (username) => username.toLowerCase() + '@' + DOMAIN;
+
+  // A profile row is what everything else points at: friendships, group
+  // membership, presence.  Registration can be interrupted between creating
+  // the auth user and writing that row — the name is then taken but the
+  // account is unusable.  Both signing in and restoring therefore create the
+  // row if it is missing, so such an account repairs itself.
+  async function ensureProfile() {
+    if (!session) return null;
+    const rows = await rest('/profiles?id=eq.' + session.user.id + '&select=*');
+    if (rows && rows[0]) { storeProfile(rows[0]); return profile; }
+
+    // The username comes back from the auth account: sign-up derives the email
+    // from it, so it is the one piece of the name we can recover.
+    const email = (session.user && session.user.email) || '';
+    const username = email.split('@')[0] || ('user' + session.user.id.slice(0, 6));
+
+    const made = await rest('/profiles', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        id: session.user.id,
+        username: username.toLowerCase(),
+        display_name: username,
+        color: null,
+      }),
+    });
+    storeProfile(Array.isArray(made) ? made[0] : made);
+    return profile;
+  }
+
+  async function signUp(username, password, displayName) {
+    const res = await fetch(cfg.url + '/auth/v1/signup', {
+      method: 'POST',
+      headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailFor(username), password }),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const msg = (data && (data.msg || data.message || data.error_description)) || 'SIGNUP_FAILED';
+      throw new Error(msg);
+    }
+
+    // Confirmation disabled: a session comes straight back.  When it does not,
+    // signing in immediately afterwards produces one.
+    let s = null;
+    if (data && data.access_token) {
+      s = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        user: { id: data.user && data.user.id, email: data.user && data.user.email },
+      };
+      storeSession(s);
+    } else {
+      try {
+        s = await signIn(username, password);
+        if (!s) throw new Error('SIGNUP_FAILED');
+        return profile;   // signIn already loaded the profile
+      } catch (e) {
+        // The account was created but cannot be used until the address is
+        // confirmed — which means the setup step was skipped.
+        const raw = (e && e.message) || '';
+        if (/confirm|not confirmed|Email not confirmed/i.test(raw)) {
+          throw new Error('EMAIL_CONFIRMATION_ON');
+        }
+        throw e;
+      }
+    }
+
+    // Write the profile, but tolerate one already existing: a retried
+    // registration must not fail at the last step.
+    try {
+      const created = await rest('/profiles', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          id: s.user.id,
+          username: username.toLowerCase(),
+          display_name: displayName || username,
+          color: null,
+        }),
+      });
+      storeProfile(Array.isArray(created) ? created[0] : created);
+    } catch (_) {
+      await ensureProfile();
+    }
+
+    // A display name different from the login name is worth a second write.
+    if (profile && displayName && displayName !== profile.display_name) {
+      try {
+        const updated = await rest('/profiles?id=eq.' + s.user.id, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ display_name: displayName }),
+        });
+        if (Array.isArray(updated) && updated[0]) storeProfile(updated[0]);
+      } catch (_) {}
+    }
+    return profile;
+  }
+
+  async function signIn(username, password) {
+    const res = await fetch(cfg.url + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailFor(username), password }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.access_token) {
+      const msg = (data && (data.error_description || data.msg || data.message)) || 'SIGNIN_FAILED';
+      throw new Error(msg);
+    }
+    const s = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      user: { id: data.user && data.user.id, email: data.user && data.user.email },
+    };
+    storeSession(s);
+    await ensureProfile();
+    return profile;
+  }
+
+  async function signOut() {
+    try {
+      await request('/auth/v1/logout', { method: 'POST' });
+    } catch (_) {}
+    storeSession(null);
+    storeProfile(null);
+    emit('auth', null);
+  }
+
+  async function loadMyProfile() {
+    if (!session) return null;
+    return ensureProfile();
+  }
+
+  async function restore() {
+    loadStored();
+    if (!session || !cfg.url) return null;
+    try {
+      // Refreshes an expired token if needed, then repairs a missing profile.
+      await ensureProfile();
+    } catch (e) {
+      // An expired refresh token is the one case where the stored login is
+      // genuinely gone; anything else (offline) should not log the user out.
+      if (e.status === 401) {
+        storeSession(null);
+        storeProfile(null);
+        emit('auth', null);
+        return null;
+      }
+    }
+    return profile;
+  }
+
+  // ── FRIENDS ───────────────────────────────────────────────────────────────
+  async function findByUsername(username) {
+    const rows = await rest('/profiles?username=eq.' + encodeURIComponent(username.toLowerCase()) + '&select=*');
+    return rows && rows[0] ? rows[0] : null;
+  }
+
+  async function friendGraph() {
+    if (!session) return { friends: [], incoming: [], outgoing: [] };
+    const me = session.user.id;
+    const rows = await rest(
+      '/friendships?or=(requester.eq.' + me + ',addressee.eq.' + me + ')&select=*'
+    );
+
+    const otherIds = [...new Set((rows || []).map((r) => (r.requester === me ? r.addressee : r.requester)))];
+    let people = [];
+    if (otherIds.length) {
+      people = await rest('/profiles?id=in.(' + otherIds.join(',') + ')&select=*');
+    }
+    const byId = new Map((people || []).map((p) => [p.id, p]));
+
+    const friends = [], incoming = [], outgoing = [];
+    for (const r of rows || []) {
+      const isReq = r.requester === me;
+      const other = byId.get(isReq ? r.addressee : r.requester);
+      if (!other) continue;
+      const item = { row: r.id, status: r.status, user: other, outgoing: isReq };
+      if (r.status === 'accepted') friends.push(item);
+      else if (isReq) outgoing.push(item);
+      else incoming.push(item);
+    }
+    return { friends, incoming, outgoing };
+  }
+
+  async function addFriend(username) {
+    const other = await findByUsername(username);
+    if (!other) throw new Error('NO_SUCH_USER');
+    if (other.id === session.user.id) throw new Error('SELF');
+
+    // If they already asked us, accepting is the useful action, not a new row.
+    const existing = await rest(
+      '/friendships?or=(and(requester.eq.' + session.user.id + ',addressee.eq.' + other.id + '),and(requester.eq.' + other.id + ',addressee.eq.' + session.user.id + '))&select=*'
+    );
+    const row = existing && existing[0];
+    if (row) {
+      if (row.status === 'accepted') throw new Error('ALREADY_FRIENDS');
+      if (row.addressee === session.user.id) {
+        await acceptFriend(row.id);
+        return { accepted: true, user: other };
+      }
+      throw new Error('ALREADY_REQUESTED');
+    }
+
+    await rest('/friendships', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ requester: session.user.id, addressee: other.id, status: 'pending' }),
+    });
+    return { accepted: false, user: other };
+  }
+
+  async function acceptFriend(rowId) {
+    await rest('/friendships?id=eq.' + rowId, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'accepted' }),
+    });
+  }
+
+  async function removeFriend(rowId) {
+    await rest('/friendships?id=eq.' + rowId, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  }
+
+  // ── GROUPS ────────────────────────────────────────────────────────────────
+  async function myGroups() {
+    if (!session) return [];
+    const me = session.user.id;
+    const memberships = await rest('/group_members?member=eq.' + me + '&select=group_id,role');
+    const ids = (memberships || []).map((m) => m.group_id);
+    if (!ids.length) return [];
+
+    const groups = await rest('/groups?id=in.(' + ids.join(',') + ')&select=*');
+    const people = await rest('/group_members?group_id=in.(' + ids.join(',') + ')&select=group_id,member,role');
+    const userIds = [...new Set((people || []).map((p) => p.member))];
+    const profiles = userIds.length
+      ? await rest('/profiles?id=in.(' + userIds.join(',') + ')&select=*')
+      : [];
+    const byId = new Map((profiles || []).map((p) => [p.id, p]));
+
+    return (groups || []).map((g) => {
+      const role = (memberships.find((m) => m.group_id === g.id) || {}).role || 'member';
+      const members = (people || [])
+        .filter((p) => p.group_id === g.id)
+        .map((p) => Object.assign({ role: p.role }, byId.get(p.member) || {}))
+        .filter((p) => p.id);
+      return Object.assign({}, g, { role, members });
+    });
+  }
+
+  function inviteCode() {
+    // Readable, no vowels that form words, no characters that look alike.
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(8);
+    (global.crypto || {}).getRandomValues
+      ? global.crypto.getRandomValues(bytes)
+      : bytes.forEach((_, i) => (bytes[i] = Math.floor(Math.random() * 256)));
+    let out = '';
+    for (let i = 0; i < 8; i++) out += abc[bytes[i] % abc.length];
+    return out;
+  }
+
+  async function createGroup(name) {
+    const gid = (global.crypto && global.crypto.randomUUID)
+      ? global.crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
+
+    await rest('/groups', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ id: gid, name, owner: session.user.id, invite: inviteCode() }),
+    });
+    // The creator must also be a member, or the group would be invisible to
+    // their own listing.
+    await rest('/group_members', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ group_id: gid, member: session.user.id, role: 'owner' }),
+    });
+    return gid;
+  }
+
+  async function joinGroup(code) {
+    return request('/rest/v1/rpc/join_group', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ invite_code: code }),
+    });
+  }
+
+  async function leaveGroup(gid) {
+    await rest('/group_members?group_id=eq.' + gid + '&member=eq.' + session.user.id, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=minimal' },
+    });
+  }
+
+  async function deleteGroup(gid) {
+    await rest('/groups?id=eq.' + gid, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  }
+
+  // ── PRESENCE ──────────────────────────────────────────────────────────────
+  // The table only records a heartbeat; whether somebody is online is decided
+  // by how fresh their mark is, so a closed tab stops looking online on its
+  // own without any server-side bookkeeping.
+  const ONLINE_WINDOW = 45000;
+  let presenceTimer = null;
+  let presenceWho = null;   // the user id the running heartbeat belongs to
+
+  async function beat() {
+    if (!session) return;
+    try {
+      await rest('/presence', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ user_id: session.user.id, last_seen: new Date().toISOString() }),
+      });
+    } catch (_) {}
+  }
+
+  function startPresence() {
+    if (!session) return;
+    // Signing in as somebody else while a heartbeat is already running must
+    // not leave the old identity marked online, or the new one unmarked.
+    if (presenceTimer && presenceWho === session.user.id) return;
+    stopPresence();
+    presenceWho = session.user.id;
+    beat();
+    presenceTimer = setInterval(beat, 20000);
+  }
+
+  function stopPresence() {
+    if (presenceTimer) { clearInterval(presenceTimer); presenceTimer = null; }
+    presenceWho = null;
+  }
+
+  async function onlineAmong(ids) {
+    if (!session || !ids || !ids.length) return new Set();
+    const rows = await rest('/presence?user_id=in.(' + ids.join(',') + ')&select=user_id,last_seen');
+    const cutoff = Date.now() - ONLINE_WINDOW;
+    const out = new Set();
+    for (const r of rows || []) {
+      if (new Date(r.last_seen).getTime() >= cutoff) out.add(r.user_id);
+    }
+    return out;
+  }
+
+  // ── CALL INVITES ──────────────────────────────────────────────────────────
+  async function inviteToCall(target) {
+    const body = { from_user: session.user.id, room: target.room };
+    if (target.userId) body.to_user = target.userId;
+    if (target.groupId) body.group_id = target.groupId;
+    await rest('/call_invites', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function pendingInvites() {
+    if (!session) return [];
+    const me = session.user.id;
+    const groups = await myGroups();
+    const gids = groups.map((g) => g.id);
+
+    const filter = gids.length
+      ? 'or=(to_user.eq.' + me + ',group_id.in.(' + gids.join(',') + '))'
+      : 'to_user=eq.' + me;
+
+    const rows = await rest('/call_invites?' + filter + '&select=*&order=created_at.desc&limit=8');
+    const fresh = (rows || []).filter((r) => Date.now() - new Date(r.created_at).getTime() < 10 * 60 * 1000);
+    if (!fresh.length) return [];
+
+    const senderIds = [...new Set(fresh.map((r) => r.from_user))];
+    const senders = await rest('/profiles?id=in.(' + senderIds.join(',') + ')&select=*');
+    const byId = new Map((senders || []).map((p) => [p.id, p]));
+
+    return fresh
+      .map((r) => ({
+        id: r.id,
+        room: r.room,
+        groupId: r.group_id,
+        from: byId.get(r.from_user) || { display_name: 'Участник' },
+      }))
+      // Do not offer a call the user themselves started for a group.
+      .filter((i) => i.from.id !== me);
+  }
+
+  async function dismissInvite(id) {
+    await rest('/call_invites?id=eq.' + id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  }
+
+  // ── PUBLIC SURFACE ────────────────────────────────────────────────────────
+  const api = {
+    get ready() { return !!(cfg.url && cfg.key); },
+    get signedIn() { return !!session; },
+    get profile() { return profile; },
+    get userId() { return session ? session.user.id : null; },
+    on,
+    config: () => cfg,
+    // Lets the interface store credentials entered in the app itself, so the
+    // file does not have to be edited by hand.  Saved where config() reads
+    // from, so it survives a reload.
+    setConfig(url, key) {
+      const clean = {
+        url: String(url || '').trim().replace(/\/+$/, ''),
+        key: String(key || '').trim(),
+      };
+      try {
+        if (clean.url && clean.key) {
+          global.localStorage.setItem('rup_supabase', JSON.stringify(clean));
+        } else {
+          global.localStorage.removeItem('rup_supabase');
+        }
+      } catch (_) {}
+      cfg = clean;
+      return api.ready;
+    },
+    restore,
+    signUp,
+    signIn,
+    signOut,
+    friendGraph,
+    addFriend,
+    acceptFriend,
+    removeFriend,
+    myGroups,
+    createGroup,
+    joinGroup,
+    leaveGroup,
+    deleteGroup,
+    startPresence,
+    stopPresence,
+    onlineAmong,
+    inviteToCall,
+    pendingInvites,
+    dismissInvite,
+  };
+
+  global.Rupor = { api: api };
+})(window);
+</script>
+<script>
+/* The friends and groups interface.
+
+   Kept apart from the call itself: this only paints lists, calls the account
+   layer, and asks the call code to open a room.  Every network call is
+   wrapped, because none of this may ever prevent a plain call from working —
+   without configuration the buttons explain themselves and the old entry
+   screen is untouched. */
+(function () {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const api = window.Rupor && window.Rupor.api;
+
+  const el = {
+    social: $('#social'),
+    home: $('#home'),
+    auth: $('#auth'),
+    meName: $('#me-name'),
+    meTag: $('#me-tag'),
+    meAvatar: $('#me-avatar'),
+    btnSignout: $('#btn-signout'),
+    btnAccount: $('#btn-account'),
+    btnSocial: $('#btn-social'),
+    inputFriend: $('#friend-name'),
+    btnAddFriend: $('#btn-add-friend'),
+    friends: $('#friends'),
+    incoming: $('#incoming'),
+    outgoing: $('#outgoing'),
+    invites: $('#invites'),
+    groups: $('#groups'),
+    groupsList: $('#groups-list'),
+    mainTitle: $('#main-title'),
+    friendTab: $('[data-tab="friends"]'),
+    groupTab: $('[data-tab="groups"]'),
+    panelFriends: $('#panel-friends'),
+    panelGroups: $('#panel-groups'),
+    badgeFriends: $('#badge-friends'),
+  };
+
+  if (!el.social || !api) return;
+
+  let mode = 'in';
+  let view = 'friends';
+  let busy = false;
+  let setup = false;   // the sign-in dialog is also the sync-setup dialog
+
+  // ── SMALL HELPERS ─────────────────────────────────────────────────────────
+  function initials(name) {
+    const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  function colorFor(id) {
+    let h = 0;
+    for (let i = 0; i < String(id || '').length; i++) h = (h * 31 + String(id).charCodeAt(i)) % 360;
+    return 'oklch(72% 0.14 ' + h + ')';
+  }
+
+  function note(text) {
+    if (window.__rup && typeof window.__rup.toast === 'function') window.__rup.toast(text);
+    else console.log(text);
+  }
+
+  // Russian wording for the errors the account layer can raise.  Anything
+  // unrecognised is shown as-is rather than hidden behind "что-то пошло не так".
+  const ERRORS = {
+    NOT_CONFIGURED: 'Синхронизация не настроена: укажите адрес и ключ Supabase.',
+    NO_SUCH_USER: 'Такого имени нет. Проверьте написание.',
+    SELF: 'Это ваше собственное имя.',
+    ALREADY_FRIENDS: 'Вы уже друзья.',
+    ALREADY_REQUESTED: 'Заявка уже отправлена.',
+    SIGNIN_FAILED: 'Неверное имя или пароль.',
+    SIGNUP_FAILED: 'Не удалось зарегистрироваться. Возможно, имя занято.',
+    EMAIL_CONFIRMATION_ON:
+      'В проекте Supabase включено подтверждение почты. Отключите его: Authentication → Providers → Email → Confirm email → выключить. Без этого вход невозможен.',
+    GROUP_NOT_FOUND: 'Группа с таким кодом не найдена.',
+    'User already registered': 'Это имя уже занято.',
+    'Invalid login credentials': 'Неверное имя или пароль.',
+    'Password should be at least 6 characters': 'Пароль короче 6 символов.',
+  };
+
+  function say(err) {
+    const raw = (err && err.message) || String(err);
+    return ERRORS[raw] || raw;
+  }
+
+  // ── ACCOUNT ───────────────────────────────────────────────────────────────
+  function paintMe() {
+    const p = api.profile;
+    const signedIn = !!p;
+    el.meName.textContent = p ? p.display_name : 'Гость';
+    el.meTag.textContent = p ? '@' + p.username : (api.ready ? 'без аккаунта' : 'синхронизация не подключена');
+    el.meAvatar.textContent = initials(p ? p.display_name : '?');
+    el.meAvatar.style.background = p ? colorFor(p.id) : 'var(--muted)';
+    el.btnSignout.hidden = !signedIn;
+    el.btnAccount.classList.toggle('hidden', signedIn);
+    el.btnSocial.classList.toggle('hidden', !signedIn);
+    el.btnAccount.textContent = !api.ready
+      ? 'Подключить синхронизацию'
+      : (signedIn ? 'Друзья и группы' : 'Войти в аккаунт');
+  }
+
+  function openAuth(asSetup) {
+    setup = !!asSetup;
+    mode = 'in';
+    setAuthMode('in');
+    $('#auth-err').textContent = '';
+
+    // In setup mode the dialog only asks for the project address and key.
+    $('#setup-fields').classList.toggle('hidden', !setup);
+    for (const id of ['auth-user', 'auth-pass']) {
+      const node = $('#' + id);
+      if (node) node.classList.toggle('hidden', setup);
+    }
+    // The display-name field belongs to the sign-up tab, which setAuthMode
+    // has just set; setup mode hides it as well.
+    if (setup) $('#auth-display').classList.add('hidden');
+    const userLabel = document.querySelector('label[for="auth-user"]');
+    const passLabel = document.querySelector('label[for="auth-pass"]');
+    if (userLabel) userLabel.classList.toggle('hidden', setup);
+    if (passLabel) passLabel.classList.toggle('hidden', setup);
+
+    document.querySelector('.auth-tabs').classList.toggle('hidden', setup);
+    $('#auth-note-default').classList.toggle('hidden', setup);
+    $('#auth-note-setup').classList.toggle('hidden', !setup);
+    $('#btn-auth-go').textContent = setup ? 'Подключить' : 'Войти';
+
+    $('#auth-pass').value = '';
+    el.auth.classList.remove('hidden');
+    setTimeout(() => { (setup ? $('#setup-url') : $('#auth-user')).focus(); }, 40);
+  }
+
+  function closeAuth() {
+    el.auth.classList.add('hidden');
+    // Leave the dialog exactly as the ordinary sign-in form for next time.
+    $('#setup-fields').classList.add('hidden');
+    for (const id of ['auth-user', 'auth-pass']) {
+      const node = $('#' + id);
+      if (node) node.classList.remove('hidden');
+    }
+    const userLabel = document.querySelector('label[for="auth-user"]');
+    const passLabel = document.querySelector('label[for="auth-pass"]');
+    if (userLabel) userLabel.classList.remove('hidden');
+    if (passLabel) passLabel.classList.remove('hidden');
+    document.querySelector('.auth-tabs').classList.remove('hidden');
+    $('#auth-note-default').classList.remove('hidden');
+    $('#auth-note-setup').classList.add('hidden');
+    setup = false;
+  }
+
+  function setAuthMode(m) {
+    mode = m;
+    document.querySelectorAll('.auth-tab').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
+    $('#btn-auth-go').textContent = m === 'in' ? 'Войти' : 'Зарегистрироваться';
+    $('#label-display').classList.toggle('hidden', m === 'in');
+    $('#auth-display').classList.toggle('hidden', m === 'in');
+    $('#auth-pass').autocomplete = m === 'in' ? 'current-password' : 'new-password';
+  }
+
+  async function doAuth() {
+    if (busy) return;
+    const errBox = $('#auth-err');
+    errBox.textContent = '';
+
+    // ── setup mode ──────────────────────────────────────────────────────────
+    if (setup) {
+      const url = ($('#setup-url').value || '').trim();
+      const key = ($('#setup-key').value || '').trim();
+
+      if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(url)) {
+        errBox.textContent = 'Адрес должен выглядеть так: https://abcdefgh.supabase.co';
+        return;
+      }
+      if (key.length < 40) {
+        errBox.textContent = 'Ключ скопирован не полностью — он длиной в несколько сотен символов.';
+        return;
+      }
+
+      api.setConfig(url, key);
+      $('#setup-key').value = '';
+      closeAuth();
+      paintMe();
+      note('Синхронизация подключена. Теперь зарегистрируйтесь.');
+      openAuth(false);
+      return;
+    }
+
+    const user = $('#auth-user').value.trim();
+    const pass = $('#auth-pass').value;
+    const display = $('#auth-display').value.trim();
+
+    if (!/^[a-zA-Z0-9_.-]{3,24}$/.test(user)) {
+      errBox.textContent = 'Имя: 3–24 символа, латиница, цифры, . _ -';
+      return;
+    }
+    if (pass.length < 6) {
+      errBox.textContent = 'Пароль не короче 6 символов.';
+      return;
+    }
+
+    busy = true;
+    const btn = $('#btn-auth-go');
+    const was = btn.textContent;
+    const wasSetup = setup;
+    btn.textContent = 'Подождите…';
+    btn.disabled = true;
+    try {
+      if (mode === 'up') await api.signUp(user, pass, display || user);
+      else await api.signIn(user, pass);
+
+      api.startPresence();
+      paintMe();
+      closeAuth();
+      openSocial();
+    } catch (e) {
+      errBox.textContent = say(e);
+    } finally {
+      busy = false;
+      // closeAuth() has already put the dialog back to its normal shape, so
+      // its label is set there; only restore it when the dialog is still open.
+      if (!wasSetup || !el.auth.classList.contains('hidden')) {
+        btn.textContent = was;
+      }
+      btn.disabled = false;
+    }
+  }
+
+  // ── LISTS ─────────────────────────────────────────────────────────────────
+  function personRow(p, opts) {
+    const row = document.createElement('div');
+    row.className = 'person';
+
+    const ava = document.createElement('div');
+    ava.className = 'ava';
+    ava.textContent = initials(p.display_name);
+    ava.style.background = colorFor(p.id);
+    if (opts && opts.online !== undefined) {
+      const dot = document.createElement('i');
+      if (opts.online) dot.className = 'on';
+      ava.appendChild(dot);
+    }
+    row.appendChild(ava);
+
+    const who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = p.display_name;
+    if (opts && opts.sub) {
+      const small = document.createElement('small');
+      small.textContent = opts.sub;
+      who.appendChild(small);
+    }
+    row.appendChild(who);
+
+    for (const b of (opts && opts.buttons) || []) {
+      const btn = document.createElement('button');
+      btn.className = 'act' + (b.kind ? ' ' + b.kind : '');
+      btn.type = 'button';
+      btn.textContent = b.label;
+      btn.title = b.title || b.label;
+      btn.addEventListener('click', b.onClick);
+      row.appendChild(btn);
+    }
+    return row;
+  }
+
+  async function refresh() {
+    if (!api.signedIn) {
+      el.friends.innerHTML = '';
+      el.incoming.innerHTML = '';
+      el.outgoing.innerHTML = '';
+      el.invites.innerHTML = '';
+      $('#friends-empty').hidden = false;
+      ['incoming-wrap', 'friends-wrap', 'outgoing-wrap'].forEach((id) => { $('#' + id).hidden = true; });
+      return;
+    }
+
+    let graph;
+    try {
+      graph = await api.friendGraph();
+    } catch (e) {
+      note(say(e));
+      return;
+    }
+
+    const online = await api.onlineAmong(graph.friends.map((f) => f.user.id)).catch(() => new Set());
+
+    el.incoming.innerHTML = '';
+    for (const f of graph.incoming) {
+      el.incoming.appendChild(personRow(f.user, {
+        buttons: [
+          { label: 'Принять', kind: 'call', onClick: () => guard(async () => { await api.acceptFriend(f.row); await refresh(); }) },
+          { label: '×', kind: 'no', title: 'Отклонить', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) },
+        ],
+      }));
+    }
+
+    el.friends.innerHTML = '';
+    for (const f of graph.friends) {
+      el.friends.appendChild(personRow(f.user, {
+        online: online.has(f.user.id),
+        sub: online.has(f.user.id) ? 'в сети' : undefined,
+        buttons: [
+          { label: 'Позвать', kind: 'call', title: 'Начать звонок и пригласить', onClick: () => callFriend(f.user) },
+          { label: '×', kind: 'no', title: 'Удалить из друзей', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) },
+        ],
+      }));
+    }
+
+    el.outgoing.innerHTML = '';
+    for (const f of graph.outgoing) {
+      el.outgoing.appendChild(personRow(f.user, {
+        sub: 'ждём ответа',
+        buttons: [{ label: 'Отменить', kind: 'no', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) }],
+      }));
+    }
+
+    const none = !graph.friends.length && !graph.incoming.length && !graph.outgoing.length;
+    $('#friends-empty').hidden = !none;
+    $('#incoming-wrap').hidden = !graph.incoming.length;
+    $('#friends-wrap').hidden = !graph.friends.length;
+    $('#outgoing-wrap').hidden = !graph.outgoing.length;
+
+    const badge = graph.incoming.length;
+    el.badgeFriends.hidden = !badge;
+    el.badgeFriends.textContent = badge || '';
+
+    await paintInvites();
+  }
+
+  async function paintInvites() {
+    el.invites.innerHTML = '';
+    let list;
+    try { list = await api.pendingInvites(); } catch (_) { return; }
+    for (const inv of list) {
+      const card = document.createElement('div');
+      card.className = 'invite-card';
+
+      const span = document.createElement('span');
+      span.textContent = (inv.from.display_name || 'Участник') + ' зовёт в комнату ' + inv.room;
+      card.appendChild(span);
+
+      const go = document.createElement('button');
+      go.className = 'act call';
+      go.type = 'button';
+      go.textContent = 'Войти';
+      go.addEventListener('click', () => {
+        api.dismissInvite(inv.id).catch(() => {});
+        joinCode(inv.room);
+      });
+      card.appendChild(go);
+
+      const no = document.createElement('button');
+      no.className = 'act no';
+      no.type = 'button';
+      no.textContent = '×';
+      no.title = 'Скрыть';
+      no.addEventListener('click', () => guard(async () => { await api.dismissInvite(inv.id); card.remove(); }));
+      card.appendChild(no);
+
+      el.invites.appendChild(card);
+    }
+  }
+
+  // Every button that talks to the network goes through this, so one failure
+  // is one readable message and never an unhandled rejection.
+  async function guard(fn) {
+    try { await fn(); }
+    catch (e) { note(say(e)); }
+  }
+
+  // ── CALLING ───────────────────────────────────────────────────────────────
+  function myDisplay() {
+    const p = api.profile;
+    if (p) return p.display_name;
+    return ($('#name').value || '').trim() || 'Гость';
+  }
+
+  async function callFriend(user) {
+    const code = window.__rup.createRoom(myDisplay());
+    if (!code) return;
+    // The console gets its name from the profile; announce the invitation so
+    // the other side sees it without being told the room code out of band.
+    if (api.signedIn) {
+      await guard(() => api.inviteToCall({ userId: user.id, room: code }));
+    }
+  }
+
+  function joinCode(code) {
+    if (!window.__rup.joinRoom(code, myDisplay())) return;
+  }
+
+  async function callGroup(group) {
+    const code = window.__rup.createRoom(myDisplay());
+    if (!code) return;
+    if (api.signedIn) {
+      await guard(() => api.inviteToCall({ groupId: group.id, room: code }));
+    }
+    note('Ссылка на комнату ' + code + ' отправлена группе');
+  }
+
+  // ── GROUPS ────────────────────────────────────────────────────────────────
+  async function paintGroups() {
+    el.groupsList.innerHTML = '';
+    if (!api.signedIn) return;
+
+    let groups;
+    try { groups = await api.myGroups(); } catch (e) { note(say(e)); return; }
+
+    if (!groups.length) {
+      const p = document.createElement('p');
+      p.className = 'social-hint';
+      p.textContent = 'Групп пока нет.';
+      el.groupsList.appendChild(p);
+      return;
+    }
+
+    for (const g of groups) {
+      const card = document.createElement('div');
+      card.className = 'group-card';
+
+      const head = document.createElement('header');
+      const name = document.createElement('b');
+      name.textContent = g.name;
+      head.appendChild(name);
+
+      const codeEl = document.createElement('span');
+      codeEl.className = 'group-code';
+      codeEl.textContent = g.invite;
+      codeEl.title = 'Скопировать код приглашения';
+      codeEl.addEventListener('click', () => {
+        copyText(g.invite).then((ok) => note(ok ? 'Код скопирован: ' + g.invite : g.invite));
+      });
+      head.appendChild(codeEl);
+
+      const callBtn = document.createElement('button');
+      callBtn.className = 'act call';
+      callBtn.type = 'button';
+      callBtn.textContent = 'Позвать';
+      callBtn.title = 'Создать комнату и пригласить всю группу';
+      callBtn.addEventListener('click', () => callGroup(g));
+      head.appendChild(callBtn);
+
+      card.appendChild(head);
+
+      const members = document.createElement('div');
+      members.className = 'group-members';
+      for (const m of g.members) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        const b = document.createElement('b');
+        b.textContent = m.display_name;
+        chip.appendChild(b);
+        if (m.role === 'owner') chip.appendChild(document.createTextNode(' · организатор'));
+        members.appendChild(chip);
+      }
+      card.appendChild(members);
+
+      const actions = document.createElement('div');
+      actions.className = 'group-create';
+      actions.style.marginTop = '10px';
+      const leave = document.createElement('button');
+      leave.className = 'side-btn';
+      leave.type = 'button';
+      leave.textContent = g.role === 'owner' ? 'Удалить группу' : 'Выйти из группы';
+      leave.addEventListener('click', () => guard(async () => {
+        if (g.role === 'owner') await api.deleteGroup(g.id);
+        else await api.leaveGroup(g.id);
+        await paintGroups();
+      }));
+      actions.appendChild(leave);
+      card.appendChild(actions);
+
+      el.groupsList.appendChild(card);
+    }
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) {
+      const t = document.createElement('textarea');
+      t.value = text;
+      document.body.appendChild(t);
+      t.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) {}
+      t.remove();
+      return ok;
+    }
+  }
+
+  // ── VIEWS ─────────────────────────────────────────────────────────────────
+  function openSocial() {
+    el.home.classList.add('hidden');
+    el.social.classList.remove('hidden');
+    paintMe();
+    setView('friends');
+    refresh();
+    if (api.signedIn) api.startPresence();
+    // Polling keeps the list honest without a live connection to the database.
+    if (!openSocial.timer) {
+      openSocial.timer = setInterval(() => {
+        if (!el.social.classList.contains('hidden')) refresh();
+      }, 8000);
+    }
+  }
+
+  function closeSocial() {
+    el.social.classList.add('hidden');
+    el.home.classList.remove('hidden');
+  }
+
+  function setView(v) {
+    view = v;
+    el.friendTab.classList.toggle('on', v === 'friends');
+    el.groupTab.classList.toggle('on', v === 'groups');
+    el.panelFriends.classList.toggle('hidden', v !== 'friends');
+    el.panelGroups.classList.toggle('hidden', v !== 'groups');
+    $('#side-friends').classList.toggle('hidden', v !== 'friends');
+    $('#side-groups').classList.toggle('hidden', v !== 'groups');
+    el.mainTitle.textContent = v === 'friends' ? 'Друзья' : 'Группы';
+    if (v === 'groups') paintGroups();
+  }
+
+  // ── WIRING ────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.auth-tab').forEach((b) => {
+    b.addEventListener('click', () => setAuthMode(b.dataset.mode));
+  });
+  $('#btn-auth-go').addEventListener('click', doAuth);
+  $('#btn-auth-cancel').addEventListener('click', closeAuth);
+  $('#auth-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAuth(); });
+  $('#auth-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#auth-pass').focus(); });
+
+  el.btnAccount.addEventListener('click', () => {
+    if (api.signedIn) openSocial();
+    else if (!api.ready) openAuth(true);   // ask for the project address and key
+    else openAuth(false);
+  });
+
+  el.btnSocial.addEventListener('click', openSocial);
+
+  el.btnSignout.addEventListener('click', () => {
+    guard(async () => {
+      api.stopPresence();
+      await api.signOut();
+      paintMe();
+    });
+  });
+
+  el.friendTab.addEventListener('click', () => setView('friends'));
+  el.groupTab.addEventListener('click', () => setView('groups'));
+
+  el.btnAddFriend.addEventListener('click', () => {
+    const name = el.inputFriend.value.trim();
+    if (!name) return;
+    guard(async () => {
+      const r = await api.addFriend(name);
+      el.inputFriend.value = '';
+      note(r.accepted ? 'Заявка принята — теперь вы друзья' : 'Заявка отправлена');
+      await refresh();
+    });
+  });
+  el.inputFriend.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.btnAddFriend.click(); });
+
+  $('#btn-create-group').addEventListener('click', () => {
+    const name = ($('#group-name').value || '').trim();
+    if (!name) return;
+    guard(async () => {
+      await api.createGroup(name);
+      $('#group-name').value = '';
+      await paintGroups();
+      note('Группа создана');
+    });
+  });
+
+  $('#btn-join-group').addEventListener('click', () => {
+    const code = ($('#group-code').value || '').trim();
+    if (!code) return;
+    guard(async () => {
+      await api.joinGroup(code);
+      $('#group-code').value = '';
+      await paintGroups();
+      note('Вы вступили в группу');
+    });
+  });
+
+  $('#btn-new-room').addEventListener('click', () => {
+    const code = window.__rup.createRoom(myDisplay());
+    if (code) note('Комната ' + code + ' создана');
+  });
+
+  // ── START ─────────────────────────────────────────────────────────────────
+  // A stored session is restored quietly; a missing or expired one simply
+  // leaves the app in its old, account-less mode.
+  paintMe();
+  if (api.ready) {
+    api.restore().then((p) => {
+      paintMe();
+      if (p) api.startPresence();
+    }).catch(() => {});
+  }
+
+  // Exposed for the tests and for the console.
+  window.__social = {
+    open: openSocial,
+    close: closeSocial,
+    refresh,
+    view: setView,
+    get ready() { return api.ready; },
+    get signedIn() { return api.signedIn; },
+  };
+})();
+</script>
+<!-- social:end -->
 </body>
 </html>
