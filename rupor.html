@@ -289,6 +289,57 @@
 
   .tile video.mirror { transform: scaleX(-1); }
 
+  /* A shared screen is often a document or code, so it must be readable.
+     Any tile can be zoomed to the whole window; the button is only shown for
+     a screen share, but a click on the tile works for any picture. */
+  .tile.video-busy { cursor: zoom-in; }
+
+  .tile .zoom-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid oklch(100% 0 0 / 0.22);
+    border-radius: 7px;
+    background: oklch(10% 0.01 275 / 0.72);
+    color: var(--text);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 140ms ease, background 140ms ease;
+  }
+  .tile:hover .zoom-btn,
+  .tile .zoom-btn:focus-visible { opacity: 1; }
+  .tile .zoom-btn:hover { background: oklch(20% 0.02 275 / 0.9); }
+
+  /* Full window view.  Kept inside the page instead of using the Fullscreen
+     API so it also works when the browser refuses, and so the controls stay
+     reachable.  The dark surround is a huge spread shadow on the tile itself,
+     not a separate overlay: #room is position:fixed and therefore its own
+     stacking context, so any sibling overlay would paint above the tile. */
+  .tile.zoomed {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    max-width: none;
+    aspect-ratio: auto;
+    border: none;
+    border-radius: 0;
+    background: #000;
+    cursor: zoom-out;
+    box-shadow: 0 0 0 100vmax oklch(4% 0.005 275 / 0.94);
+  }
+  .tile.zoomed .zoom-btn { top: 14px; right: 14px; opacity: 1; }
+  .tile.zoomed .nameplate { bottom: 14px; left: 14px; }
+  .tile.zoomed video { object-fit: contain; }
+
+  body.zoom-open { overflow: hidden; }
+
   .avatar {
     width: 72px; height: 72px;
     border-radius: 50%;
@@ -1719,6 +1770,8 @@
     }
     if (localTile) {
       localTile.classList.toggle('sharing', sharing);
+      if (zoomedTile === localTile && !stream) closeZoom();
+      refreshZoomAffordance(localTile);
     }
     // mic indicator
     const plate = localTile && localTile.querySelector('.nameplate');
@@ -1776,6 +1829,13 @@
     video.addEventListener('resize', revealOnFrames);
     video.addEventListener('playing', revealOnFrames);
 
+    // Frames arriving is also the moment the tile becomes zoomable, and the
+    // state message often arrives before the first frame is decoded.
+    const syncZoom = () => refreshZoomAffordance(el);
+    video.addEventListener('loadedmetadata', syncZoom);
+    video.addEventListener('resize', syncZoom);
+    video.addEventListener('playing', syncZoom);
+
     const plate = document.createElement('div');
     plate.className = 'nameplate';
     const span = document.createElement('span');
@@ -1796,6 +1856,73 @@
     r.av.textContent = initials(r.name);
   }
 
+  // ── ZOOM A TILE ───────────────────────────────────────────────────────────
+  // A shared screen is unreadable in a small tile, so a click blows it up to
+  // the whole window.  The state is a CSS class rather than the Fullscreen
+  // API: that way it works even where fullscreen is refused (the desktop
+  // launcher opens the page as file://), and the call controls stay usable.
+  let zoomedTile = null;
+
+  function zoomEligible(el) {
+    const v = el.querySelector('video');
+    return !!(v && getComputedStyle(v).display !== 'none' && v.videoWidth > 0);
+  }
+
+  function openZoom(el) {
+    if (zoomedTile === el) return;
+    closeZoom();
+    if (!zoomEligible(el)) return;
+    zoomedTile = el;
+    el.classList.add('zoomed');
+    document.body.classList.add('zoom-open');
+  }
+
+  function closeZoom() {
+    if (!zoomedTile) return;
+    zoomedTile.classList.remove('zoomed');
+    zoomedTile = null;
+    document.body.classList.remove('zoom-open');
+  }
+
+  // The magnifier button appears whenever a tile actually has a picture, and
+  // the tile itself becomes clickable.  Re-run on every visual change because
+  // a camera or a screen share can start at any moment.
+  function refreshZoomAffordance(el) {
+    const ok = zoomEligible(el);
+    el.classList.toggle('video-busy', ok);
+    let btn = el.querySelector('.zoom-btn');
+    if (ok && !btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'zoom-btn';
+      btn.title = 'Развернуть на весь экран';
+      btn.setAttribute('aria-label', 'Развернуть на весь экран');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6"/></svg>';
+      // Clicking the button would otherwise also hit the tile and toggle twice.
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomedTile === el ? closeZoom() : openZoom(el);
+      });
+      el.appendChild(btn);
+    } else if (!ok && btn) {
+      if (zoomedTile === el) closeZoom();
+      btn.remove();
+    }
+  }
+
+  // One delegated handler for every tile, present and future.
+  document.getElementById('grid').addEventListener('click', (e) => {
+    if (e.target.closest('.zoom-btn')) return;
+    const el = e.target.closest('.tile');
+    if (!el) return;
+    if (zoomedTile === el) closeZoom();
+    else openZoom(el);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && zoomedTile) closeZoom();
+  });
+
   // ── REMOTE AUDIO ──────────────────────────────────────────────────────────
   // Chrome refuses to start an <audio> element that was never touched by a
   // user until the page has seen a click or a keypress.  In a call that lands
@@ -1804,7 +1931,8 @@
   let audioBlocked = false;
 
   function showUnlock(on) {
-    audioBlocked = on;    const el = document.getElementById('unlock');
+    audioBlocked = on;
+    const el = document.getElementById('unlock');
     if (el) el.hidden = !on;
   }
 
@@ -1876,6 +2004,10 @@
 
     if (picture && r.video.paused) r.video.play().catch(() => {});
 
+    // A zoomed tile that loses its picture must not trap the view.
+    if (zoomedTile === r.el && !picture) closeZoom();
+    refreshZoomAffordance(r.el);
+
     let mark = r.plate.querySelector('.mic-off');
     if (r.mic === false) {
       if (!mark) {
@@ -1904,6 +2036,7 @@
   function removeRemote(id) {
     const r = remotes.get(id);
     if (r) {
+      if (zoomedTile === r.el) closeZoom();
       r.el.remove();
       remotes.delete(id);
       renderCount();
@@ -2212,6 +2345,7 @@
     cleanupPeer();
 
     if (localTile) { localTile.remove(); localTile = null; localVideo = null; localAvatar = null; }
+    closeZoom();
     $('#grid').innerHTML = '';
     $('#chat-log').innerHTML = '';
     $('#room').classList.add('hidden');
