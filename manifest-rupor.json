@@ -25,7 +25,7 @@
       "name": "Создать комнату",
       "short_name": "Новая встреча",
       "description": "Открыть Рупор и создать новую комнату",
-      "url": "./rupor.html?new=1",
+      "url": "./rupor.html?create=1",
       "icons": [{ "src": "rupor-192.png", "sizes": "192x192" }]
     }
   ]

@@ -3426,18 +3426,6 @@
     peer.on('error', (e) => {
       const type = e && e.type;
 
-      if (type === 'unavailable-id') {
-        setErr('Эта комната уже существует. Попробуйте другой код.');
-        cleanupPeer();
-        return;
-      }
-      if (type === 'peer-unavailable') {
-        if (!isHost) {
-          setErr('Комната не найдена. Проверьте код.');
-          leaveRoom(true);
-        }
-        return;
-      }
       if (type === 'relay-down') {
         setErr('Не удалось связаться с сервером знакомств. Ваш интернет тут ни при чём — недоступен публичный посредник. Попробуйте через минуту.');
         return;
@@ -3775,6 +3763,13 @@
     $('#code').value = invite;
     document.title = `Вход в комнату ${invite} — Рупор`;
   }
+  // Shortcut from the installed PWA manifest: open and immediately create a room.
+  if (params.get('create') === '1') {
+    addEventListener('load', () => {
+      const btn = $('#btn-create');
+      if (btn) btn.click();
+    }, { once: true });
+  }
 
   window.addEventListener('beforeunload', () => {
     send({ t: 'bye' });
@@ -3787,6 +3782,8 @@
     createRoom(name) {
       myName = normalizeName(name || 'Гость');
       const code = makeCode(6);
+      // If already in a room, leave it cleanly before starting a new one.
+      if (roomCode) leaveRoom(true);
       $('#home').classList.add('hidden');
       startPeer(code, true);
       return code;
@@ -3795,6 +3792,8 @@
       const clean = String(code || '').trim().toUpperCase();
       if (!/^[A-Z0-9]{4,8}$/.test(clean)) return false;
       myName = normalizeName(name || 'Гость');
+      // If already in a room, leave it cleanly before joining another.
+      if (roomCode) leaveRoom(true);
       $('#home').classList.add('hidden');
       startPeer(clean, false);
       return true;
@@ -3955,6 +3954,80 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  // ── GROUP CRYPTO ──────────────────────────────────────────────────────────
+  // The invite code is the group's shared secret: it travels out of band
+  // (copied by hand, sent over another channel) and never through MQTT.
+  // From it we derive a signing key and an encryption key, so anything the
+  // broker stores is opaque to whoever does not know the code.
+
+  const cryptoCtx = new TextEncoder();
+  const cryptoDec = new TextDecoder();
+
+  function b64(bytes) {
+    let s = '';
+    for (const b of new Uint8Array(bytes)) s += String.fromCharCode(b);
+    return btoa(s);
+  }
+  function unb64(str) {
+    const raw = atob(str || '');
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function importKey(material, usage, alg) {
+    return crypto.subtle.importKey('raw', material, alg, false, usage);
+  }
+
+  // Derive two independent keys from the invite code.  A domain separator
+  // keeps signing and encryption key material from overlapping.
+  async function groupKeys(code) {
+    const base = await crypto.subtle.digest('SHA-256', cryptoCtx.encode('rupor-group:' + slug(code)));
+    const signBits   = await crypto.subtle.digest('SHA-256', new Uint8Array([...new Uint8Array(base), 1]));
+    const cryptBits  = await crypto.subtle.digest('SHA-256', new Uint8Array([...new Uint8Array(base), 2]));
+    const signKey  = await importKey(signBits,  ['sign', 'verify'],
+      { name: 'HMAC', hash: 'SHA-256' });
+    const cryptKey = await importKey(cryptBits, ['encrypt', 'decrypt'],
+      { name: 'AES-GCM', length: 256 });
+    return { signKey, cryptKey };
+  }
+
+  async function hmacSign(signKey, text) {
+    const mac = await crypto.subtle.sign('HMAC', signKey, cryptoCtx.encode(text));
+    return b64(mac);
+  }
+
+  async function hmacCheck(signKey, text, mac) {
+    try {
+      const expect = unb64(mac);
+      const got = new Uint8Array(await crypto.subtle.sign('HMAC', signKey, cryptoCtx.encode(text)));
+      if (got.length !== expect.length) return false;
+      let diff = 0;
+      for (let i = 0; i < got.length; i++) diff |= got[i] ^ expect[i];
+      return diff === 0;
+    } catch (_) { return false; }
+  }
+
+  async function encryptField(cryptKey, value) {
+    if (value === undefined || value === null || value === '') return value;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const buf = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv }, cryptKey, cryptoCtx.encode(JSON.stringify(value))
+    );
+    return b64(new Uint8Array([...iv, ...new Uint8Array(buf)]));
+  }
+
+  async function decryptField(cryptKey, blob) {
+    if (!blob) return blob;
+    try {
+      const all = unb64(blob);
+      const iv = all.slice(0, 12);
+      const body = all.slice(12);
+      const buf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptKey, body);
+      return JSON.parse(cryptoDec.decode(buf));
+    } catch (_) { return null; }
+  }
+
   // ── ACCOUNT (localStorage only) ───────────────────────────────────────────
   const NAME_RE = /^[a-zA-Z0-9_.-]{3,24}$/;
 
@@ -4035,6 +4108,7 @@
   }
 
   function signOut() {
+    unsubscribeInvites();
     stopPresence();
     if (profile) drop(ROOT + '/p/' + profile.id);
     saveSession(null);
@@ -4110,7 +4184,10 @@
 
   function startPresence() {
     if (!profile) return;
+    wireGroupListener();
+    wireChatListener();
     subscribeInvites();
+    syncGroupSubs();
     if (beatTimer && beatWho === profile.id) return;
     stopPresence();
     beatWho = profile.id;
@@ -4121,17 +4198,6 @@
   function stopPresence() {
     if (beatTimer) { clearInterval(beatTimer); beatTimer = null; }
     beatWho = null;
-  }
-
-  async function onlineAmong(ids) {
-    const online = new Set();
-    const list = (ids || []).filter(Boolean);
-    if (!list.length) return online;
-    await Promise.all(list.map(async (id) => {
-      const hit = await readTopic(ROOT + '/p/' + id, 2500);
-      if (hit && Date.now() - (hit.at || 0) < 50000) online.add(id);
-    }));
-    return online;
   }
 
   // ── GROUPS ────────────────────────────────────────────────────────────────
@@ -4207,24 +4273,69 @@
   }
 
   // Read a group the freshest way available: the higher of the broker's copy
-  // and our own cached copy.
+  // and our own cached copy.  Records are encrypted with the invite code, so
+  // the code is looked up from the local cache; a group we have no code for
+  // cannot be read, which is exactly the intended access rule.
   async function groupRecord(gid, timeoutMs) {
-    const fromNet = await readGroup(groupTopic(gid), timeoutMs);
     const local = cachedGroup(gid);
-    if (!fromNet) return local;
-    if (!local) return fromNet;
-    return (Number(fromNet.rev) || 0) >= (Number(local.rev) || 0) ? fromNet : local;
+    const code = local && local.invite;
+    const fromNet = await readGroup(groupTopic(gid), timeoutMs);
+    const plain = fromNet ? await decryptGroup(fromNet, code) : null;
+    if (!plain) return local;
+    // The published record never carries the invite code (it is the key), so
+    // take it from the local copy to keep the UI and chat working.
+    if (!plain.invite && local && local.invite) plain.invite = local.invite;
+    if (!local) { cacheGroup(plain); return plain; }
+    const win = (Number(plain.rev) || 0) >= (Number(local.rev) || 0) ? plain : local;
+    cacheGroup(win);
+    return win;
   }
 
   // Writes carry a revision one higher than whatever we last saw, so readers on
-  // either broker can tell which copy is newer.  put() resolves only after both
-  // brokers have acknowledged, so the record is durable by the time this
-  // returns; the local cache makes our own view instantaneous either way.
+  // either broker can tell which copy is newer.  The sensitive fields are
+  // encrypted with a key derived from the invite code; the whole record is
+  // HMAC-signed so a tampering attempt is detected on read.
   async function writeGroup(rec) {
     const next = { ...rec, rev: (Number(rec.rev) || 0) + 1 };
-    cacheGroup(next);
-    await put(groupTopic(next.id), next);
+    cacheGroup(next); // cache the plaintext before encrypting
+
+    if (next.invite) {
+      const { signKey, cryptKey } = await groupKeys(next.invite);
+      // Encrypt sensitive fields.  The invite code itself is the key, so it is
+      // never published — it travels out of band and stays in the local cache.
+      const enc = {
+        ...next,
+        name:    await encryptField(cryptKey, next.name),
+        members: await encryptField(cryptKey, next.members),
+        enc: 1,
+      };
+      delete enc.invite;
+      // Sign the stable fields that an attacker might try to swap.
+      const signable = enc.id + '|' + enc.owner + '|' + enc.rev + '|' + enc.name;
+      enc.sig = await hmacSign(signKey, signable);
+      await put(groupTopic(enc.id), enc);
+    } else {
+      await put(groupTopic(next.id), next);
+    }
     return next;
+  }
+
+  // Decrypt and verify a record from the broker.  Returns null if the
+  // signature does not match (tampered or from an unknown client version).
+  async function decryptGroup(raw, inviteCode) {
+    if (!raw || !raw.id) return null;
+    if (!raw.enc) return raw; // legacy record without encryption
+
+    const { signKey, cryptKey } = await groupKeys(inviteCode || raw.invite || '');
+    const signable = raw.id + '|' + raw.owner + '|' + raw.rev + '|' + raw.name;
+    const ok = await hmacCheck(signKey, signable, raw.sig);
+    if (!ok) return null; // reject tampered records
+
+    const name    = await decryptField(cryptKey, raw.name);
+    const members = await decryptField(cryptKey, raw.members);
+    if (name === null || members === null) return null; // decryption failed
+
+    return { ...raw, name, members, enc: 1 };
   }
 
   async function myGroups() {
@@ -4234,21 +4345,85 @@
     await Promise.all(Array.from(ids).map(async (gid) => {
       const g = await groupRecord(gid, 5000);
       if (!g) return;
-      out.push({
-        id: g.id,
-        name: g.name,
-        invite: g.invite,
-        owner: g.owner,
-        role: g.owner === profile.id ? 'owner' : 'member',
-        members: g.members || [],
-      });
+      out.push(toGroupView(g));
     }));
     out.sort((a, b) => a.name.localeCompare(b.name));
     return out;
   }
 
+  function toGroupView(g) {
+    return {
+      id: g.id,
+      name: g.name,
+      invite: g.invite,
+      owner: g.owner,
+      role: g.owner === profile.id ? 'owner' : 'member',
+      members: Array.isArray(g.members) ? g.members : [],
+    };
+  }
+
+  // A cache-only view of the groups for periodic repaints: no network at all.
+  // Live updates arrive through the group subscription below, so polling this
+  // cheaply every few seconds is enough to keep the panel truthful.
+  function myGroupsCached() {
+    if (!profile) return [];
+    const out = [];
+    for (const gid of myGroupIdSet()) {
+      const g = cachedGroup(gid);
+      if (g) out.push(toGroupView(g));
+    }
+    out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
+  }
+
+  // ── GROUP SUBSCRIPTION ────────────────────────────────────────────────────
+  // One wildcard per shard segment is not allowed by the brokers, so we
+  // subscribe to the exact topics we know about.  Subscriptions live on the
+  // long-lived writer bus, so keeping them in sync costs no connections.
+  const groupSubs = new Set();
+  const groupListeners = new Set();
+
+  function syncGroupSubs() {
+    if (!profile) return;
+    ensureBus();
+    const wanted = new Set(Array.from(myGroupIdSet()).map(groupTopic));
+    for (const t of wanted) {
+      if (!groupSubs.has(t)) { groupSubs.add(t); try { bus.subscribe(t); } catch (_) {} }
+    }
+    for (const t of Array.from(groupSubs)) {
+      if (!wanted.has(t)) { groupSubs.delete(t); try { bus.unsubscribe(t); } catch (_) {} }
+    }
+  }
+
+  function onGroups(fn) {
+    groupListeners.add(fn);
+    return () => groupListeners.delete(fn);
+  }
+
+  // Wire the group topics into the shared listener set once.
+  function wireGroupListener() {
+    if (wireGroupListener._done) return;
+    wireGroupListener._done = true;
+    const prefix = ROOT + '/g/';
+    listeners.add(async (topic, value) => {
+      if (!topic.startsWith(prefix)) return;
+      if (!value || !value.id) return; // deletion: leave the cache alone,
+                                       // myGroups() will notice the empty read
+      // Decode with the invite code from the local cache before storing;
+      // caching the ciphertext here would poison the plaintext cache.
+      const local = cachedGroup(value.id);
+      const plain = await decryptGroup(value, local && local.invite);
+      if (!plain) return; // tampered or unreadable: ignore the update
+      if (!plain.invite && local && local.invite) plain.invite = local.invite;
+      cacheGroup(plain);
+      for (const fn of groupListeners) { try { fn(plain); } catch (_) {} }
+    });
+  }
+
   async function createGroup(name) {
     if (!profile) throw new Error('SIGNIN_FAILED');
+    wireGroupListener();
+    wireChatListener();
     const clean = String(name || '').trim().slice(0, 60);
     if (!clean) throw new Error('GROUP_NAME');
 
@@ -4269,19 +4444,28 @@
     const ids = myGroupIdSet();
     ids.add(id);
     saveMyGroupIds(ids);
+    syncGroupSubs();
     return id;
   }
 
   async function joinGroup(code) {
     if (!profile) throw new Error('SIGNIN_FAILED');
+    wireGroupListener();
+    wireChatListener();
     const clean = String(code || '').trim().toUpperCase();
     if (!clean) throw new Error('GROUP_NOT_FOUND');
 
     const dir = await readTopic(inviteTopic(clean), 6000);
     if (!dir || !dir.id) throw new Error('GROUP_NOT_FOUND');
 
-    const g = await groupRecord(dir.id, 7000);
+    // We know the invite code (the user typed it), so decrypt the record
+    // directly rather than going through groupRecord(), which would need a
+    // cached copy to find the code.
+    const rawNet = await readGroup(groupTopic(dir.id), 7000);
+    const g = await decryptGroup(rawNet, clean);
     if (!g) throw new Error('GROUP_NOT_FOUND');
+    g.invite = clean;
+    cacheGroup(g);
 
     // Add ourselves if not already a member.
     const members = (g.members || []).filter((m) => m.id !== profile.id);
@@ -4291,6 +4475,7 @@
     const ids = myGroupIdSet();
     ids.add(g.id);
     saveMyGroupIds(ids);
+    syncGroupSubs();
     return g.id;
   }
 
@@ -4339,7 +4524,9 @@
   // ── CHAT ──────────────────────────────────────────────────────────────────
   const chatTopic = (gid, seq) => ROOT + '/c/' + gid + '/' + seq;
   let chatGid = null;
-  let chatSeen = new Map();
+  let chatKey = null;      // CryptoKey derived from the group invite code
+  let chatSeen = new Map();   // seq → decrypted message (the whole visible log)
+  let chatQueue = [];         // raw payloads that arrived before the key was ready
   let chatSubs = [];
 
   async function openChat(gid) {
@@ -4347,11 +4534,33 @@
     closeChat();
     chatGid = gid;
     chatSeen = new Map();
+    chatQueue = [];
+    chatKey = null;
     if (!gid) return;
+
+    wireChatListener();
+
+    // Subscribe first: retained messages can arrive at any moment and must not
+    // be lost while we are still deriving the key below.
     ensureBus();
     const filter = ROOT + '/c/' + gid + '/+';
     chatSubs.push(filter);
     bus.subscribe(filter);
+
+    // Derive the chat key from the group's invite code.  If the local cache
+    // has no record yet (a fresh join still in flight), fetch it first.
+    let g = cachedGroup(gid);
+    if (!g || !g.invite) {
+      try { g = await groupRecord(gid, 5000); } catch (_) {}
+    }
+    if (g && g.invite) {
+      try { chatKey = (await groupKeys(g.invite)).cryptKey; } catch (_) {}
+    }
+
+    // Drain whatever arrived while the key was being derived.
+    const pending = chatQueue.slice();
+    chatQueue = [];
+    for (const raw of pending) await decodeChat(raw.topic, raw.value);
   }
 
   function closeChat() {
@@ -4360,59 +4569,158 @@
     }
     chatSubs = [];
     chatGid = null;
+    chatKey = null;
     chatSeen = new Map();
+    chatQueue = [];
   }
+
+  // Decrypt one payload and remember it.  Returns the message or null.
+  async function decodeChat(topic, value) {
+    if (!chatGid) return null;
+    const prefix = ROOT + '/c/' + chatGid + '/';
+    if (!topic.startsWith(prefix)) return null;
+    if (!value || !value.p) return null;
+    const seq = Number(topic.slice(prefix.length));
+    if (!seq) return null;
+    if (chatSeen.has(seq)) return null;
+
+    let msg = null;
+    if (chatKey) {
+      const clear = await decryptField(chatKey, value.p);
+      if (clear && typeof clear === 'object' && typeof clear.text === 'string') msg = clear;
+    }
+    if (!msg) {
+      // Legacy / keyless payload: plain base64 of the original JSON object.
+      try {
+        const raw = JSON.parse(cryptoDec.decode(unb64(value.p)));
+        if (raw && typeof raw.text === 'string') msg = raw;
+      } catch (_) {}
+    }
+    if (!msg) return null;
+
+    chatSeen.set(seq, msg);
+    for (const fn of chatListeners) { try { fn(msg); } catch (_) {} }
+    return msg;
+  }
+
+  const chatListeners = new Set();
 
   function onChat(fn) {
-    const wrap = (topic, value) => {
-      if (!chatGid) return;
-      const prefix = ROOT + '/c/' + chatGid + '/';
-      if (!topic.startsWith(prefix)) return;
-      if (!value || !value.text) return;
-      const seq = Number(topic.slice(prefix.length));
-      if (!seq) return;
-      if (chatSeen.has(seq)) return;
-      chatSeen.set(seq, value);
-      fn(value);
-    };
-    listeners.add(wrap);
-    return () => listeners.delete(wrap);
+    chatListeners.add(fn);
+    // Replay anything already decrypted: a retained message may have arrived
+    // before the caller registered (the panel opens the chat and subscribes in
+    // a separate step).
+    const sorted = Array.from(chatSeen.values());
+    for (const msg of sorted) { try { fn(msg); } catch (_) {} }
+    return () => chatListeners.delete(fn);
   }
 
-  function sendChat(text) {
+  // Wire the raw chat topic into the shared listener set once, so payloads are
+  // captured even before anyone calls onChat().
+  function wireChatListener() {
+    if (wireChatListener._done) return;
+    wireChatListener._done = true;
+    const prefix = ROOT + '/c/';
+    listeners.add((topic, value) => {
+      if (!chatGid || !topic.startsWith(prefix)) return;
+      if (!chatGid || !topic.startsWith(ROOT + '/c/' + chatGid + '/')) return;
+      if (!value || !value.p) return;
+      if (!chatKey) {
+        // Key not ready yet — hold the payload; openChat() drains this queue.
+        if (chatQueue.length < 200) chatQueue.push({ topic, value });
+        return;
+      }
+      decodeChat(topic, value);
+    });
+  }
+
+  async function sendChat(text) {
     if (!profile || !chatGid) return false;
     const clean = String(text || '').trim().slice(0, 500);
     if (!clean) return false;
     const seq = Date.now();
     const msg = { from: profile.id, name: profile.display_name, text: clean, at: seq };
-    put(chatTopic(chatGid, seq), msg);
+
+    let payload;
+    if (chatKey) {
+      payload = { p: await encryptField(chatKey, msg) };
+    } else {
+      // No key (group record not readable yet): still never write plaintext.
+      payload = { p: b64(cryptoCtx.encode(JSON.stringify(msg))) };
+    }
+
+    // Wait for the broker to accept it: reporting "sent" while the write is
+    // still in flight would make the log lie about what other people see.
+    const ok = await put(chatTopic(chatGid, seq), payload);
+
     const seqs = Array.from(chatSeen.keys()).sort((a, b) => a - b);
     for (const old of seqs.slice(0, Math.max(0, seqs.length - CHAT_KEEP + 1))) {
       if (old === seq) continue;
       drop(chatTopic(chatGid, old));
       chatSeen.delete(old);
     }
-    return true;
+    return ok !== false;
   }
 
   // ── CALL INVITES ──────────────────────────────────────────────────────────
-  const inviteFor = (uid) => ROOT + '/ci/' + uid;
-  const seenInvite = new Set();
+  // Each invite lives in its own retained slot: ci/<uid>/<inviteId>.
+  // This lets multiple simultaneous callers coexist instead of overwriting
+  // each other, and lets the recipient dismiss a single invite without
+  // clearing unrelated ones.
+  const inviteSlot  = (uid, iid) => ROOT + '/ci/' + uid + '/' + iid;
+  const inviteWild  = (uid)      => ROOT + '/ci/' + uid + '/+';
+  const inviteIndex = (uid)      => ROOT + '/ci/' + uid + '/_idx'; // list of active iids
+  const seenInvite  = new Set();
   const inviteListeners = new Set();
+  let   _invSubscribed = false;
+  let   lastInvite = null;
 
-  // Push-subscribe to own invite topic so the UI gets notified instantly
-  // without waiting for the 8-second poll.  Called once after sign-in.
+  // Push-subscribe to own invite wildcard so the UI gets notified instantly
+  // without waiting for the 8-second poll.  Called once after sign-in; calling
+  // it again (e.g. openSocial re-trigger) is a no-op.
   function subscribeInvites() {
     if (!profile) return;
-    const topic = inviteFor(profile.id);
+    if (_invSubscribed) return;
+    _invSubscribed = true;
+
+    const filter = inviteWild(profile.id);
     ensureBus();
-    bus.subscribe(topic);
-    listeners.add((t, value) => {
-      if (t !== topic) return;
-      if (!value || !value.id) return;
+    bus.subscribe(filter);
+
+    const handler = (t, value) => {
+      const prefix = ROOT + '/ci/' + profile.id + '/';
+      if (!t.startsWith(prefix)) return;
+      const key = t.slice(prefix.length);
+      if (key === '_idx') return; // index updates are not invite notifications
+
+      // An empty payload means the invite was dropped (caller hung up or
+      // another device dismissed it).  Tell the UI so the ring stops at once.
+      if (!value) {
+        for (const fn of inviteListeners) {
+          try { fn({ id: key, cancelled: true }); } catch (_) {}
+        }
+        return;
+      }
+
+      if (!value.id) return;
       if (seenInvite.has(value.id)) return;
       for (const fn of inviteListeners) { try { fn(value); } catch (_) {} }
-    });
+    };
+    listeners.add(handler);
+    subscribeInvites._handler = handler;
+    subscribeInvites._filter  = filter;
+  }
+
+  function unsubscribeInvites() {
+    _invSubscribed = false;
+    if (subscribeInvites._handler) {
+      listeners.delete(subscribeInvites._handler);
+      subscribeInvites._handler = null;
+    }
+    if (subscribeInvites._filter && bus) {
+      try { bus.unsubscribe(subscribeInvites._filter); } catch (_) {}
+      subscribeInvites._filter = null;
+    }
   }
 
   function onInvite(fn) {
@@ -4431,47 +4739,79 @@
       targets = [opts.userId];
     } else if (opts.groupId) {
       const g = await groupRecord(opts.groupId, 5000);
+      const members = g && Array.isArray(g.members) ? g.members : [];
       if (g) {
-        targets = (g.members || []).filter((m) => m.id !== profile.id).map((m) => m.id);
+        targets = members.filter((m) => m.id !== profile.id).map((m) => m.id);
         groupName = g.name || '';
       }
     }
 
-    // Wait for the broker acknowledgement: the caller reports "invited" and a
-    // write still in flight would make that a lie.
-    await Promise.all(targets.map((uid) => put(inviteFor(uid), {
-      id: hex(6),
-      from: profile.id,
-      name: profile.display_name,
-      groupName,
-      room,
-      at: Date.now(),
-    })));
+    // One invite id shared across all recipients of this call so the caller
+    // can cancel all of them by id if they hang up before anyone answers.
+    const iid = hex(6);
+    // Write an index of active invite ids so recipients can enumerate slots
+    // without relying on wildcard subscriptions that brokers may not support.
+    await Promise.all(targets.map(async (uid) => {
+      const idxRaw = await readTopic(inviteIndex(uid), 3000);
+      const idx = Array.isArray(idxRaw) ? idxRaw : [];
+      if (!idx.includes(iid)) idx.push(iid);
+      await put(inviteIndex(uid), idx);
+      await put(inviteSlot(uid, iid), {
+        id: iid,
+        from: profile.id,
+        name: profile.display_name,
+        groupName,
+        room,
+        at: Date.now(),
+      });
+    }));
+    lastInvite = { iid, targets: targets.slice() };
     return targets.length;
   }
 
-  // The invitation is written to every broker, but a reader may reach one that
-  // has not been handed the retained copy yet.  A couple of short retries covers
-  // that gap without making a genuinely absent invitation look present.
+  // Read all pending invite slots for this user via the index topic.
   async function pendingInvites() {
     if (!profile) return [];
-    let inv = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      inv = await readTopic(inviteFor(profile.id), 4000);
-      if (inv && inv.id) break;
-      if (attempt < 2) await sleep(900);
-    }
-    if (!inv || !inv.id) return [];
-    if (Date.now() - (inv.at || 0) > 10 * 60 * 1000) return [];
-    if (seenInvite.has(inv.id)) return [];
-    return [inv];
+    const idxRaw = await readTopic(inviteIndex(profile.id), 5000);
+    const idx = Array.isArray(idxRaw) ? idxRaw : (idxRaw ? [idxRaw.id].filter(Boolean) : []);
+    if (!idx.length) return [];
+    const now = Date.now();
+    const results = await Promise.all(idx.map((iid) => readTopic(inviteSlot(profile.id, iid), 4000)));
+    return results
+      .filter((inv) => inv && inv.id && !seenInvite.has(inv.id) && (now - (inv.at || 0)) < 10 * 60 * 1000)
+      .sort((a, b) => (b.at || 0) - (a.at || 0));
   }
 
   async function dismissInvite(id) {
-    if (id) seenInvite.add(id);
     if (!profile) return;
-    drop(inviteFor(profile.id));
+    if (id) {
+      seenInvite.add(id);
+      await drop(inviteSlot(profile.id, id));
+      // Remove from index.
+      const idxRaw = await readTopic(inviteIndex(profile.id), 3000);
+      const idx = Array.isArray(idxRaw) ? idxRaw.filter((x) => x !== id) : [];
+      if (idx.length) await put(inviteIndex(profile.id), idx);
+      else await drop(inviteIndex(profile.id));
+    }
     return true;
+  }
+
+  // Remove the retained invite from every recipient's slot so their ring stops.
+  async function cancelInvites(iid, targets) {
+    if (!profile) return 0;
+    const id  = iid     || (lastInvite && lastInvite.iid);
+    const tgt = targets || (lastInvite && lastInvite.targets) || [];
+    lastInvite = null;
+    if (!id) return 0;
+    await Promise.all(tgt.map(async (uid) => {
+      await drop(inviteSlot(uid, id));
+      // Update the recipient's index.
+      const idxRaw = await readTopic(inviteIndex(uid), 3000);
+      const idx = Array.isArray(idxRaw) ? idxRaw.filter((x) => x !== id) : [];
+      if (idx.length) await put(inviteIndex(uid), idx);
+      else await drop(inviteIndex(uid));
+    }));
+    return tgt.length;
   }
 
   // ── PUBLIC SURFACE ────────────────────────────────────────────────────────
@@ -4488,16 +4828,18 @@
     signIn,
     signOut,
     myGroups,
+    myGroupsCached,
+    onGroups,
     createGroup,
     joinGroup,
     leaveGroup,
     deleteGroup,
     startPresence,
     stopPresence,
-    onlineAmong,
     inviteToCall,
     pendingInvites,
     dismissInvite,
+    cancelInvites,
     onInvite,
     subscribeInvites,
     openChat,
@@ -4668,7 +5010,7 @@
         await api.signIn(user, pass);
       } catch (e) {
         if (e.message === 'NO_SUCH_USER') {
-          const display = ($('#auth-display') && $('#auth-display').value.trim()) || user;
+          const display = user;
           await api.signUp(user, pass, display);
         } else {
           throw e;
@@ -4677,18 +5019,7 @@
 
       api.startPresence();
       // Subscribe to incoming call invites immediately after sign-in.
-      api.onInvite((inv) => {
-        if (!_pendingInv || _pendingInv.id !== inv.id) {
-          _pendingInv = inv;
-          showCallOverlay({
-            label: 'Входящий звонок',
-            caller: inv.name || 'Кто-то',
-            group: inv.groupName || '',
-            outgoing: false,
-          });
-          startRing(false);
-        }
-      });
+      api.onInvite(onIncomingInvite);
       paintMe();
       closeAuth();
       openSocial();
@@ -4702,10 +5033,6 @@
   }
 
   // ── GROUPS ────────────────────────────────────────────────────────────────
-  // paintGroups is async and can be triggered from several places at once (the
-  // refresh timer, a button, a manual refresh).  Two overlapping runs would
-  // both rebuild and both swap in, so a second call while one is in flight just
-  // asks for one more pass afterwards.
   let painting = false;
   let paintAgain = false;
 
@@ -4719,15 +5046,23 @@
     }
   }
 
+  // Paint immediately from cache (zero network), then refresh from network.
+  async function paintGroupsFast() {
+    if (api.myGroupsCached) {
+      const cached = api.myGroupsCached();
+      if (cached.length) renderGroups(cached);
+    }
+    await paintGroups();
+  }
+
   async function paintGroupsOnce() {
     if (!api.signedIn) { el.groupsList.replaceChildren(); return; }
-
     let groups;
     try { groups = await api.myGroups(); } catch (e) { note(say(e)); return; }
+    renderGroups(groups);
+  }
 
-    // Build into a detached fragment and swap it in at the end.  Clearing the
-    // live list first would blank it for the whole network round-trip, and the
-    // panel refreshes every few seconds.
+  function renderGroups(groups) {
     const box = document.createDocumentFragment();
 
     if (!groups.length) {
@@ -4845,8 +5180,15 @@
   }
 
   function appendChat(msg) {
+    // Our own message is painted the moment it is typed; when the retained
+    // copy comes back from the broker it must not appear a second time.
+    if (msg.from === api.userId) {
+      const last = el.chatLog.lastElementChild;
+      if (last && last.dataset && last.dataset.text === String(msg.text)) return;
+    }
     const row = document.createElement('div');
     row.className = 'chat-msg';
+    if (api.userId) row.dataset.text = String(msg.text);
 
     const who = document.createElement('b');
     who.textContent = (msg.name || '?') + ': ';
@@ -4960,14 +5302,14 @@
     return ($('#name').value || '').trim() || 'Гость';
   }
 
+  // Tracks the outgoing call so hangup can dismiss invites on the other side.
+  let _outgoingCall = null; // set after inviteToCall succeeds
+
   async function callGroup(group) {
     const code = window.__rup.createRoom(myDisplay());
     if (!code) { note(ERRORS.NO_ROOM); return; }
-    // createRoom() opened the room and hid #home; just take the social panel
-    // away without closeSocial() putting #home back.
     exitChat();
     el.social.classList.add('hidden');
-    // Show outgoing overlay right away; invite delivery happens in background.
     showCallOverlay({
       label: 'Звонок в группу',
       caller: group.name,
@@ -4977,6 +5319,7 @@
     startRing(true);
     try {
       await api.inviteToCall({ groupId: group.id, room: code });
+      _outgoingCall = { room: code };
       note('Комната ' + code + ' создана, группа оповещена');
     } catch (e) {
       note(say(e));
@@ -4994,6 +5337,33 @@
   // survives the inviter closing their laptop.  The panel polls while it is
   // open and offers a single button that joins the room.
   let paintingInvites = false;
+
+  // Shared handler for both push and poll paths.
+  function onIncomingInvite(inv) {
+    if (!inv || !inv.id) return;
+
+    // Caller hung up: stop ringing if this was the invite we were showing.
+    if (inv.cancelled) {
+      if (_pendingInv && _pendingInv.id === inv.id) {
+        stopRing();
+        hideCallOverlay();
+        if (el.invites) el.invites.replaceChildren();
+        if (el.invitesWrap) el.invitesWrap.classList.add('hidden');
+      }
+      return;
+    }
+
+    if (!_pendingInv || _pendingInv.id !== inv.id) {
+      _pendingInv = inv;
+      showCallOverlay({
+        label: 'Входящий звонок',
+        caller: inv.name || 'Кто-то',
+        group: inv.groupName || '',
+        outgoing: false,
+      });
+      startRing(false);
+    }
+  }
 
   async function paintInvites() {
     if (!api.signedIn || !el.invites) return;
@@ -5020,16 +5390,7 @@
 
     // Show the overlay for the first (most recent) invite immediately.
     const inv = list[0];
-    if (!_pendingInv || _pendingInv.id !== inv.id) {
-      _pendingInv = inv;
-      showCallOverlay({
-        label: 'Входящий звонок',
-        caller: inv.name || 'Кто-то',
-        group: inv.groupName || '',
-        outgoing: false,
-      });
-      startRing(false);
-    }
+    onIncomingInvite(inv);
 
     // Also keep the sidebar list in sync (hidden behind overlay but useful for
     // multi-invite scenarios and tests).
@@ -5090,9 +5451,11 @@
     if (!openSocial.timer) {
       openSocial.timer = setInterval(() => {
         if (el.social.classList.contains('hidden')) return;
+        // Push subscription handles instant invite notifications; polling is
+        // just a safety net for missed retained messages (e.g. tab was hidden).
         paintInvites();
         if (!openChatGid) paintGroups();
-      }, 8000);
+      }, 20000);
     }
   }
 
@@ -5109,7 +5472,7 @@
     if (el.sideGroups) el.sideGroups.classList.remove('hidden');
     if (el.groupTab) el.groupTab.classList.add('on');
     el.mainTitle.textContent = 'Группы';
-    paintGroups();
+    paintGroupsFast();
   }
 
   async function guard(fn) {
@@ -5151,7 +5514,8 @@
     el.btnCallHangup.addEventListener('click', () => {
       stopRing();
       hideCallOverlay();
-      // Caller already created the room and joined — just hide the overlay.
+      _outgoingCall = null;
+      if (api.cancelInvites) api.cancelInvites().catch(() => {});
     });
   }
 
@@ -5191,10 +5555,14 @@
     e.preventDefault();
     const text = el.chatInput.value.trim();
     if (!text) return;
-    if (api.sendChat(text)) {
-      el.chatInput.value = '';
-      el.chatInput.focus();
-    }
+    // Show our own message immediately: the retained write takes a round-trip
+    // and the log should not appear to have swallowed it.
+    appendChat({ from: api.userId, name: myDisplay(), text });
+    el.chatInput.value = '';
+    el.chatInput.focus();
+    Promise.resolve(api.sendChat(text)).then((ok) => {
+      if (!ok) note('Не удалось отправить сообщение');
+    });
   });
 
   $('#btn-create-group').addEventListener('click', () => {
@@ -5234,18 +5602,7 @@
     if (p) {
       api.startPresence();
       // Subscribe to incoming call invites so the overlay appears instantly.
-      api.onInvite((inv) => {
-        if (!_pendingInv || _pendingInv.id !== inv.id) {
-          _pendingInv = inv;
-          showCallOverlay({
-            label: 'Входящий звонок',
-            caller: inv.name || 'Кто-то',
-            group: inv.groupName || '',
-            outgoing: false,
-          });
-          startRing(false);
-        }
-      });
+      api.onInvite(onIncomingInvite);
     }
   }).catch(() => {});
 
@@ -5260,6 +5617,12 @@
     get ready() { return api.ready; },
     get signedIn() { return api.signedIn; },
   };
+
+  // Live push updates for group records — repaints the panel immediately when
+  // another member joins, leaves, or the owner changes the group name.
+  if (api.onGroups) {
+    api.onGroups(() => { if (!openChatGid) paintGroupsFast(); });
+  }
 })();
 </script>
 <!-- social:end -->
