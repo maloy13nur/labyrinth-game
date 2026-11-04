@@ -265,6 +265,28 @@
     box-shadow: 0 0 0 2px oklch(66% 0.19 285 / 0.18);
   }
 
+  /* An incoming call: one row per invitation, name, room code, and the two
+     things you can do about it. */
+  .invite-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid oklch(66% 0.19 285 / 0.35);
+    border-radius: 9px;
+    background: oklch(66% 0.19 285 / 0.08);
+  }
+  .invite-row b {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+  .invite-row .side-btn { padding: 6px 9px; font-size: 0.75rem; }
+
   .side-btn {
     flex-shrink: 0;
     padding: 8px 12px;
@@ -310,6 +332,70 @@
     font-size: 0.82rem;
     line-height: 1.6;
     margin-bottom: 15px;
+  }
+
+  /* ── GROUP CHAT ─────────────────────────────────────────────── */
+  #panel-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .chat-head-social {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .chat-head-social b { font-size: 0.92rem; }
+
+  .chat-log-social {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-right: 4px;
+  }
+
+  .chat-line {
+    font-size: 0.84rem;
+    line-height: 1.45;
+    padding: 6px 10px;
+    border-radius: 9px;
+    background: var(--panel-2);
+    align-self: flex-start;
+    max-width: 92%;
+    word-break: break-word;
+  }
+  .chat-line.mine { align-self: flex-end; background: oklch(32% 0.07 285); }
+  .chat-line b { display: block; font-size: 0.72rem; margin-bottom: 2px; }
+
+  .chat-form-social {
+    display: flex;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  .chat-form-social input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.82rem;
+  }
+  .chat-form-social input:focus {
+    outline: none;
+    border-color: var(--accent);
   }
 
   .group-create {
@@ -1062,23 +1148,13 @@
     </div>
 
     <div class="side-tabs">
-      <button class="side-tab on" data-tab="friends">Друзья <b id="badge-friends" hidden></b></button>
-      <button class="side-tab" data-tab="groups">Группы</button>
+      <button class="side-tab on" data-tab="groups">Группы</button>
     </div>
 
-    <div class="side-list" id="side-friends">
-      <div class="side-empty" id="friends-empty">Пока никого нет.<br>Добавьте друга по имени.</div>
-      <div class="side-group" id="incoming-wrap" hidden>
-        <div class="side-label">Заявки</div>
-        <div id="incoming"></div>
-      </div>
-      <div class="side-group" id="friends-wrap" hidden>
-        <div class="side-label">Друзья</div>
-        <div id="friends"></div>
-      </div>
-      <div class="side-group" id="outgoing-wrap" hidden>
-        <div class="side-label">Отправленные</div>
-        <div id="outgoing"></div>
+    <div class="side-list" id="side-calls">
+      <div class="side-group hidden" id="invites-wrap">
+        <div class="side-label">Звонки</div>
+        <div id="invites"></div>
       </div>
     </div>
 
@@ -1086,32 +1162,19 @@
       <div class="side-empty" id="groups-empty">Групп нет.<br>Создайте или войдите по коду.</div>
       <div id="groups"></div>
     </div>
-
-    <div class="side-actions">
-      <input class="side-input" id="friend-name" placeholder="Имя друга" maxlength="24" autocomplete="off">
-      <button class="side-btn" id="btn-add-friend">Добавить</button>
-    </div>
   </aside>
 
   <main class="social-main">
     <div class="social-head">
-      <h2 id="main-title">Друзья</h2>
+      <h2 id="main-title">Группы</h2>
       <button class="btn primary narrow" id="btn-new-room">Создать комнату</button>
     </div>
 
     <div class="social-body">
-      <div id="panel-friends">
+      <div id="panel-groups">
         <p class="social-hint">
-          Добавьте друга по имени — он появится здесь, и вы сможете позвать его в комнату одной кнопкой.
-          Друзья видны с любого устройства, где вы вошли в свой аккаунт.
-        </p>
-        <div id="invites"></div>
-      </div>
-
-      <div id="panel-groups" class="hidden">
-        <p class="social-hint">
-          Группа — это общий список людей и одна постоянная комната. Код группы можно передать
-          кому угодно: он вступит сам.
+          Группа — это общий список людей и один общий чат. Как только вы позвали группу,
+          у всех её участников появляется кнопка «Присоединиться».
         </p>
         <div class="group-create">
           <input class="side-input" id="group-name" placeholder="Название группы" maxlength="60" autocomplete="off">
@@ -1123,6 +1186,18 @@
         </div>
         <div id="groups-list"></div>
       </div>
+
+      <div id="panel-chat" class="hidden">
+        <div class="chat-head-social">
+          <button class="side-btn" id="chat-back" type="button">← Назад</button>
+          <b id="chat-title">Чат группы</b>
+        </div>
+        <div class="chat-log-social" id="chat-log-social"></div>
+        <form class="chat-form-social" id="chat-form-social">
+          <input id="chat-input-social" placeholder="Сообщение…" maxlength="500" autocomplete="off">
+          <button class="side-btn" type="submit">Отправить</button>
+        </form>
+      </div>
     </div>
   </main>
 </div>
@@ -1130,37 +1205,19 @@
 <!-- ══ AUTH ══ -->
 <div id="auth" class="hidden">
   <div class="entry">
-    <div class="auth-tabs">
-      <button class="auth-tab on" data-mode="in">Вход</button>
-      <button class="auth-tab" data-mode="up">Регистрация</button>
-    </div>
-
     <label for="auth-user">Имя</label>
     <input class="field" id="auth-user" maxlength="24" placeholder="ваше имя" autocomplete="username" spellcheck="false">
 
     <label for="auth-pass">Пароль</label>
     <input class="field" id="auth-pass" type="password" maxlength="72" placeholder="не короче 6 символов" autocomplete="current-password">
 
-    <label for="auth-display" id="label-display" class="hidden">Как показывать</label>
-    <input class="field hidden" id="auth-display" maxlength="24" placeholder="Имя в списке" autocomplete="off">
-
-    <div id="setup-fields" class="hidden">
-      <label for="setup-url">Адрес проекта Supabase</label>
-      <input class="field" id="setup-url" placeholder="https://abcdefgh.supabase.co" autocomplete="off" spellcheck="false">
-
-      <label for="setup-key">Ключ anon public</label>
-      <input class="field" id="setup-key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false">
-    </div>
-
     <button class="btn primary" id="btn-auth-go">Войти</button>
     <button class="btn" id="btn-auth-cancel">Отмена</button>
 
     <p class="auth-note" id="auth-note-default">
-      Пароль защищает аккаунт. Почту указывать не нужно — она не используется и не проверяется.
-    </p>
-    <p class="auth-note hidden" id="auth-note-setup">
-      Возьмите оба значения в Supabase → Project Settings → API. Они не секретны:
-      ключ anon предназначен для браузера, а доступ к данным ограничивают правила базы.
+      Имя и пароль хранятся только в этом браузере — никуда не отправляются.
+      Вход с новым именем сразу создаёт аккаунт. Одинаковые имя и пароль
+      дают один и тот же аккаунт на любом устройстве.
     </p>
     <div class="err" id="auth-err"></div>
   </div>
@@ -1192,7 +1249,7 @@
     <div class="or">аккаунт</div>
 
     <button class="btn" id="btn-account">Войти в аккаунт</button>
-    <button class="btn hidden" id="btn-social">Друзья и группы</button>
+    <button class="btn hidden" id="btn-social">Группы</button>
 
     <button class="btn install" id="btn-install" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px">
@@ -1348,6 +1405,10 @@
   const ICE_CAP = 1500;
   const RETRY = [0, 1500, 3500, 6000, 9000];
 
+  // The first offer goes out before the other side may have subscribed, so it
+  // is repeated over the first few seconds until an answer comes back.
+  const OFFER_RETRY = [1200, 3000, 6000, 10000, 15000];
+
   // Extra ICE servers may be supplied at runtime without rebuilding the file:
   //   localStorage.rup_ice = '[{"urls":"turn:1.2.3.4:80","username":"u","credential":"p"}]'
   // Lets a blocked or expired relay be swapped from a browser console.
@@ -1411,44 +1472,203 @@
     });
   }
 
-  // ── minimal MQTT 3.1.1 client over WebSocket (QoS 0) ──────────────────────
+  // ── minimal MQTT 3.1.1 client over WebSocket ───────────────────────────────
+  //
+  // ROOT CAUSE: public brokers (emqx ~12, hivemq ~8) stop delivering PUBACKs
+  // after rapid subscription churn on the same connection.  The socket stays
+  // open but writes get no acknowledgement and retained data stops arriving.
+  //
+  // FIX: separate the write path from the read path entirely.
+  //
+  //   Mqtt (writer) — long-lived, dials both brokers, holds only persistent
+  //   subscriptions (signalling room, presence, chat wildcards).  Never
+  //   unsubscribes.  All retained writes go here.  Because it never churns
+  //   subscriptions it always gets PUBACKs.
+  //
+  //   MqttReader — one-shot connection to a single broker for a single topic.
+  //   Opens, subscribes, takes the retained value (or empty after settle
+  //   window), then closes itself.  No subscription ever accumulates across
+  //   reads, so churn is impossible.
+  //
+  // The two classes share the low-level framing helpers but are otherwise
+  // independent.
+
+  // ── MqttReader ─────────────────────────────────────────────────────────────
+  // Opens a fresh WebSocket to one broker, subscribes to one topic, waits
+  // for the retained payload or empty, then closes.  Returns a Promise that
+  // resolves to the raw payload string or null.
+  //
+  // Used by social.js for every ad-hoc read (name lookup, user record,
+  // friendship, etc.).  Each read gets its own connection so no subscription
+  // accumulates between reads.
+  function MqttReader(url, topic, timeoutMs) {
+    return new Promise((resolve) => {
+      let done = false;
+      let settleTimer = null;
+      const finish = (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(outTimer);
+        clearTimeout(settleTimer);
+        try { ws.send(new Uint8Array([0xe0, 0x00])); } catch (_) {}
+        try { ws.close(); } catch (_) {}
+        resolve(value);
+      };
+      const outTimer = setTimeout(() => finish(null), timeoutMs || 7000);
+
+      let ws;
+      try { ws = new WebSocket(url, ['mqtt']); } catch (_) { clearTimeout(outTimer); resolve(null); return; }
+      ws.binaryType = 'arraybuffer';
+      let buf = new Uint8Array(0);
+
+      ws.onopen = () => {
+        const idb = utf8('rdr' + hex(5));
+        const body = [0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3c,
+                      0x00, idb.length, ...idb];
+        try { ws.send(packet(0x10, body)); } catch (_) {}
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => { if (!done) finish(null); };
+
+      ws.onmessage = (ev) => {
+        if (done) return;
+        const c = new Uint8Array(ev.data instanceof ArrayBuffer ? ev.data : ev.data.buffer || new ArrayBuffer(0));
+        const m = new Uint8Array(buf.length + c.length);
+        m.set(buf); m.set(c, buf.length); buf = m;
+
+        for (;;) {
+          const b = buf;
+          if (b.length < 2) break;
+          let mul = 1, len = 0, i = 1, byte = 0;
+          do {
+            if (i >= b.length) return;
+            byte = b[i++]; len += (byte & 0x7f) * mul; mul *= 128;
+            if (i > 4) return;
+          } while (byte & 0x80);
+          if (b.length < i + len) break;
+          const type = b[0] >> 4, flags = b[0] & 0x0f;
+          const body = b.slice(i, i + len);
+          buf = b.slice(i + len);
+
+          if (type === 2) {          // CONNACK
+            if (body.length > 1 && body[1] !== 0) { finish(null); return; }
+            // Subscribe QoS 0 — no PUBACK flow at all, just delivery.
+            const t = utf8(topic);
+            try { ws.send(packet(0x82, [0x00, 0x01, 0x00, t.length, ...t, 0x00])); } catch (_) {}
+          } else if (type === 9) {   // SUBACK — settle window then declare empty
+            settleTimer = setTimeout(() => finish(null), 700);
+          } else if (type === 3) {   // PUBLISH
+            const qos = (flags >> 1) & 3;
+            const tlen = (body[0] << 8) | body[1];
+            if (body.length < 2 + tlen) break;
+            const t = dec.decode(body.subarray(2, 2 + tlen));
+            if (t === topic) {
+              let at = 2 + tlen;
+              if (qos > 0) at += 2;
+              finish(dec.decode(body.subarray(at)));
+            }
+          }
+        }
+      };
+    });
+  }
+
+  // Read a topic from the first broker that answers, trying both in parallel.
+  // Returns the payload string or null.
+  function mqttRead(topic, timeoutMs) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
+      Promise.all(
+        BROKERS.map((url) =>
+          MqttReader(url, topic, timeoutMs || 7000).then((v) => { if (v !== null) finish(v); return v; })
+        )
+      ).then((results) => {
+        // Both returned null — topic is empty (or unreachable).
+        if (!settled) finish(null);
+      });
+    });
+  }
+
+  // Read a topic and wait for BOTH brokers to answer, then return the newest
+  // value by its `rev` field.  mqttRead takes whichever broker replies first,
+  // which right after a write can be the one that has not caught up yet and so
+  // hands back a stale record.  Group records carry a revision counter, so this
+  // picks the fresher copy instead of the faster one.  Records written before
+  // the counter existed are treated as revision 0.
+  function mqttReadEach(topic, timeoutMs) {
+    return Promise.all(BROKERS.map((url) => MqttReader(url, topic, timeoutMs || 7000)));
+  }
+
+  function mqttReadNewest(topic, timeoutMs) {
+    return mqttReadEach(topic, timeoutMs).then((results) => {
+      const parsed = results
+        .filter((v) => v !== null && v !== undefined && v !== '')
+        .map((v) => { try { return JSON.parse(v); } catch (_) { return null; } })
+        .filter(Boolean);
+      if (!parsed.length) return null;
+      return parsed.reduce((newest, rec) =>
+        (Number(rec.rev) || 0) >= (Number(newest.rev) || 0) ? rec : newest);
+    });
+  }
+
+  // ── Mqtt (writer / persistent-subscriber) ─────────────────────────────────
+  // Every broker is dialled at once rather than one after another.  A retained
+  // message lives inside the broker that stores it, so a client that wrote only
+  // to broker A is invisible to a client that happened to land on broker B.
+  // Reaching both at the same time means the two always meet, and it also means
+  // one relay being down costs nothing.
+  //
+  // This class is only used for:
+  //   - signalling room subscription (Peer)
+  //   - persistent subscriptions added by social.js (presence, chat wildcards)
+  //   - all retained writes (QoS 1)
+  //
+  // It NEVER calls unsubscribe or resubscribe, so subscription count stays low
+  // and PUBACKs keep flowing.
   class Mqtt {
     constructor(hooks) {
       this.hooks = hooks;
-      this.ws = null;
-      this.ready = false;
       this.dead = false;
-      this.idx = 0;
       this.cid = 'rup' + hex(6);
       this.subs = new Set();
-      this.queue = [];
-      this.buf = new Uint8Array(0);
-      this.pingTimer = null;
-      this.retryTimer = null;
       this.pid = 0;
       this.everReady = false;
       this.raw = [];
+      this.links = BROKERS.map((url, i) => ({
+        url,
+        i,
+        ws: null,
+        ready: false,
+        buf: new Uint8Array(0),
+        queue: [],
+        pingTimer: null,
+        retryTimer: null,
+        pubResolve: new Map(),     // packet id -> settle callback, until PUBACK
+      }));
     }
+
+    // One live relay is enough to work.
+    get ready() { return this.links.some((l) => l.ready); }
 
     _log(what) {
       this.raw.push(Date.now() % 1000000 + ' ' + what);
       if (this.raw.length > 60) this.raw.shift();
     }
 
-    start() { this._open(); }
+    start() { for (const link of this.links) this._open(link); }
 
-    _open() {
+    _open(link) {
       if (this.dead) return;
-      this.buf = new Uint8Array(0);
-      const url = BROKERS[this.idx % BROKERS.length];
+      link.buf = new Uint8Array(0);
       let ws;
-      try { ws = new WebSocket(url, ['mqtt']); } catch (_) { this._retry(); return; }
+      try { ws = new WebSocket(link.url, ['mqtt']); } catch (_) { this._retry(link); return; }
       ws.binaryType = 'arraybuffer';
-      this.ws = ws;
+      link.ws = ws;
 
       ws.onopen = () => {
-        this._log('open broker=' + this.idx);
-        // CONNECT: protocol "MQTT", level 4, clean session, 60 s keep-alive.
+        if (link.ws !== ws) return;
+        this._log('open broker=' + link.i);
         const idb = utf8(this.cid);
         const body = [0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04, 0x02, 0x00, 0x3c,
                       0x00, idb.length, ...idb];
@@ -1456,46 +1676,47 @@
       };
 
       ws.onmessage = (ev) => {
+        if (link.ws !== ws) return;
         const d = ev.data;
-        if (d instanceof ArrayBuffer) this._feed(new Uint8Array(d));
-        else if (d && d.buffer) this._feed(new Uint8Array(d.buffer));
-        else if (typeof d === 'string') this._feed(enc.encode(d));
+        if (d instanceof ArrayBuffer) this._feed(link, new Uint8Array(d));
+        else if (d && d.buffer) this._feed(link, new Uint8Array(d.buffer));
+        else if (typeof d === 'string') this._feed(link, enc.encode(d));
       };
 
       ws.onclose = (e) => {
-        this._log('close ' + (e && e.code));
-        this.ready = false;
-        this._stopPing();
-        if (!this.dead) this._retry();
+        if (link.ws !== ws) return;
+        this._log('close broker=' + link.i + ' ' + (e && e.code));
+        link.ready = false;
+        this._stopPing(link);
+        if (!this.dead) this._retry(link);
       };
 
       ws.onerror = () => {};
     }
 
-    _retry() {
-      if (this.dead || this.retryTimer) return;
-      this.idx++;
-      this.retryTimer = setTimeout(() => {
-        this.retryTimer = null;
-        this._open();
+    _retry(link) {
+      if (this.dead || link.retryTimer) return;
+      link.retryTimer = setTimeout(() => {
+        link.retryTimer = null;
+        this._open(link);
       }, 1500);
     }
 
-    _feed(chunk) {
-      const merged = new Uint8Array(this.buf.length + chunk.length);
-      merged.set(this.buf);
-      merged.set(chunk, this.buf.length);
-      this.buf = merged;
+    _feed(link, chunk) {
+      const merged = new Uint8Array(link.buf.length + chunk.length);
+      merged.set(link.buf);
+      merged.set(chunk, link.buf.length);
+      link.buf = merged;
       for (;;) {
-        const p = this._next();
+        const p = this._next(link);
         if (!p) break;
-        this._handle(p);
-        if (this.dead || !this.ws) break;
+        this._handle(link, p);
+        if (this.dead || !link.ws) break;
       }
     }
 
-    _next() {
-      const b = this.buf;
+    _next(link) {
+      const b = link.buf;
       if (b.length < 2) return null;
       let mul = 1, len = 0, i = 1, byte = 0;
       do {
@@ -1506,79 +1727,149 @@
         if (i > 4) return null;
       } while (byte & 0x80);
       if (b.length < i + len) return null;
-      const out = { type: b[0] >> 4, body: b.slice(i, i + len) };
-      this.buf = b.slice(i + len);
+      const out = { type: b[0] >> 4, flags: b[0] & 0x0f, body: b.slice(i, i + len) };
+      link.buf = b.slice(i + len);
       return out;
     }
 
-    _handle(p) {
-      const { type, body } = p;
+    _handle(link, p) {
+      const { type, flags, body } = p;
       if (type === 2) {                        // CONNACK
         const rc = body.length > 1 ? body[1] : 1;
-        if (rc !== 0) { this._retry(); return; }
-        this.ready = true;
-        this._log('connack');
-        for (const topic of this.subs) this._sub(topic);
-        const queued = this.queue;
-        this.queue = [];
+        if (rc !== 0) { this._retry(link); return; }
+        link.ready = true;
+        this._log('connack broker=' + link.i);
+        for (const topic of this.subs) this._sub(link, topic);
+        const queued = link.queue;
+        link.queue = [];
         for (const fn of queued) { try { fn(); } catch (_) {} }
-        this._startPing();
+        this._startPing(link);
         const first = !this.everReady;
         this.everReady = true;
         if (this.hooks.onReady) this.hooks.onReady(first);
         return;
       }
-      if (type === 3) {                        // PUBLISH (QoS 0)
+      if (type === 4) {                        // PUBACK (QoS 1)
         if (body.length < 2) return;
+        const id = (body[0] << 8) | body[1];
+        const settle = link.pubResolve.get(id);
+        if (settle) { link.pubResolve.delete(id); settle(true); }
+        return;
+      }
+      if (type === 3) {                        // PUBLISH
+        if (body.length < 2) return;
+        const qos = (flags >> 1) & 3;
         const tlen = (body[0] << 8) | body[1];
         if (body.length < 2 + tlen) return;
         const topic = dec.decode(body.subarray(2, 2 + tlen));
-        const payload = dec.decode(body.subarray(2 + tlen));
+        let at = 2 + tlen;
+        if (qos > 0) at += 2;
+        const payload = dec.decode(body.subarray(at));
         this._log('pub ' + topic.split('/').pop());
         if (this.hooks.onMessage) this.hooks.onMessage(topic, payload);
       }
+      // SUBACK (type 9) is not needed here: this class never waits on SUBACKs.
     }
 
     subscribe(topic) {
+      if (this.subs.has(topic)) return;
       this.subs.add(topic);
-      if (this.ready) this._sub(topic);
+      for (const link of this.links) {
+        if (link.ready) this._sub(link, topic);
+      }
     }
 
-    _sub(topic) {
+    _sub(link, topic) {
       const t = utf8(topic);
       if (t.length > 250) return;
-      const id = ++this.pid;
-      // QoS 0 subscription — no PUBACK flow control to throttle delivery.
+      const id = ++this.pid & 0xffff || 1;
       const body = [id >> 8, id & 0xff, 0x00, t.length, ...t, 0x00];
-      try { this.ws.send(packet(0x82, body)); } catch (_) {}
+      try { link.ws.send(packet(0x82, body)); } catch (_) {}
     }
 
     publish(topic, obj) {
-      const t = utf8(topic);
-      if (t.length > 250) return;
-      const body = [0x00, t.length, ...t, ...utf8(JSON.stringify(obj))];
-      const send = () => { try { this.ws.send(packet(0x30, body)); } catch (_) {} };
-      if (this.ready) send();
-      else { this.queue.push(send); if (this.queue.length > 8) this.queue.shift(); }
+      this.publishRaw(topic, JSON.stringify(obj), false);
     }
 
-    _startPing() {
-      this._stopPing();
-      this.pingTimer = setInterval(() => {
-        try { this.ws.send(new Uint8Array([0xc0, 0x00])); } catch (_) {}
+    // retain=true asks the broker to keep this payload and hand it to every
+    // later subscriber.  That turns a plain public relay into a tiny key-value
+    // store, which is what the account layer is built on.  An empty payload
+    // with retain=true deletes the stored value.  Every write goes to every
+    // relay, so a reader finds it whichever one they reached.
+    //
+    // The publish is QoS 1.  At QoS 0 the broker acknowledges nothing and a
+    // dropped frame is invisible — writes simply vanish.  QoS 1 makes the
+    // broker answer with PUBACK.
+    //
+    // Returns one promise per relay: true when that relay acknowledged.
+    publishRaw(topic, text, retain) {
+      const t = utf8(topic);
+      if (t.length > 250) return [];
+      const payload = utf8(text == null ? '' : String(text));
+      const packetType = retain ? 0x33 : 0x32;   // PUBLISH with QoS 1
+      return this.links.map((link) => this._publishOn(link, t, payload, packetType));
+    }
+
+    _publishOn(link, topicBytes, payload, packetType) {
+      return new Promise((resolve) => {
+        let settled = false;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(ok);
+        };
+        const send = () => {
+          if (!link.ready) return finish(false);
+          const id = (++this.pid) & 0xffff || 1;
+          link.pubResolve.set(id, finish);
+          const body = [0x00, topicBytes.length, ...topicBytes, id >> 8, id & 0xff, ...payload];
+          try { link.ws.send(packet(packetType, body)); }
+          catch (_) { link.pubResolve.delete(id); finish(false); }
+        };
+        const timer = setTimeout(() => finish(false), 6000);
+        if (link.ready) send();
+        else {
+          link.queue.push(send);
+          if (link.queue.length > 12) link.queue.shift();
+        }
+      });
+    }
+
+    // unsubscribe is intentionally kept but social.js no longer calls it for
+    // ad-hoc reads.  It is only used if a persistent subscription (e.g. a chat
+    // room the user leaves) should be torn down.
+    unsubscribe(topic) {
+      this.subs.delete(topic);
+      const t = utf8(topic);
+      if (t.length > 250) return;
+      for (const link of this.links) {
+        if (!link.ready) continue;
+        const id = (++this.pid) & 0xffff || 1;
+        const body = [id >> 8, id & 0xff, t.length >> 8, t.length & 0xff, ...t];
+        try { link.ws.send(packet(0xa2, body)); } catch (_) {}
+      }
+    }
+
+    _startPing(link) {
+      this._stopPing(link);
+      link.pingTimer = setInterval(() => {
+        try { link.ws.send(new Uint8Array([0xc0, 0x00])); } catch (_) {}
       }, 30000);
     }
 
-    _stopPing() {
-      if (this.pingTimer) { clearInterval(this.pingTimer); this.pingTimer = null; }
+    _stopPing(link) {
+      if (link.pingTimer) { clearInterval(link.pingTimer); link.pingTimer = null; }
     }
 
     close() {
       this.dead = true;
-      this._stopPing();
-      if (this.retryTimer) { clearTimeout(this.retryTimer); this.retryTimer = null; }
-      try { this.ws.send(new Uint8Array([0xe0, 0x00])); } catch (_) {}
-      try { this.ws.close(); } catch (_) {}
+      for (const link of this.links) {
+        this._stopPing(link);
+        if (link.retryTimer) { clearTimeout(link.retryTimer); link.retryTimer = null; }
+        try { link.ws.send(new Uint8Array([0xe0, 0x00])); } catch (_) {}
+        try { link.ws.close(); } catch (_) {}
+      }
     }
   }
 
@@ -1728,14 +2019,10 @@
       const m = { ...msg, cid: this.mqtt.cid };
       if (!m.to) m.to = peerId;
       this._tr('pub', m.t + (m.kind ? '/' + m.kind : '') + ' to=' + (m.to || '').slice(-6) + ' sid=' + (m.sid || '').slice(0, 6));
-      // Prefer the data channel when open — it is a direct WebRTC connection
-      // and does not touch the unreliable public MQTT broker.
       if (this._sendViaData(peerId, m)) return;
       this.mqtt.publish(this.topicFor(), m);
     }
 
-    // Handle a signalling message that arrived through a data channel.
-    // Skips the MQTT own-echo filter because data channels have no echoes.
     _onDcSignal(m) {
       if (!m || typeof m !== 'object') return;
       this._tr('dc', (m.t || '?') + (m.kind ? '/' + m.kind : '') + ' sid=' + (m.sid || '').slice(0, 6));
@@ -1749,8 +2036,6 @@
       this._pub(conn.peer, { t: 'answer', from: this.id, sid: conn.sid, sdp: conn.answerSdp });
     }
 
-    // Repeat the answer several times.  A public relay drops frames, so
-    // the caller may need more than one copy before one gets through.
     _repeatAnswer(conn) {
       for (const delay of RETRY) {
         setTimeout(() => {
@@ -1772,8 +2057,6 @@
         return;
       }
 
-      // The relay reconnected: anything that never reached "connected" may
-      // have lost its handshake in the gap, so announce it again.
       for (const conn of Array.from(this._out.values())) {
         if (conn.closed) continue;
         if (conn.pc && conn.pc.connectionState === 'connected') continue;
@@ -1790,7 +2073,6 @@
       return new RTCPeerConnection({ iceServers: iceServers(), bundlePolicy: 'max-bundle' });
     }
 
-    // ── dialling ─────────────────────────────────────────────────────────────
     connect(peerId) {
       const conn = new DataConn(this, String(peerId));
       this._dial(conn, null);
@@ -1831,40 +2113,41 @@
     }
 
     _offer(target) {
-      if (target.closed || this.destroyed || !target.pc || !target.pc.localDescription) return;
-      const msg = {
-        t: 'offer', kind: target.kind, from: this.id, to: target.peer,
-        sid: target.sid, sdp: target.pc.localDescription.sdp,
+      if (this.destroyed || target.closed || !target.pc) return;
+      if (!target.pc.localDescription) return;
+      const send = () => {
+        if (this.destroyed || target.closed || !target.pc) return;
+        if (target.pc.connectionState === 'connected') return;
+        this._pub(target.peer, {
+          t: 'offer',
+          from: this.id,
+          sid: target.sid,
+          kind: target.kind,
+          sdp: target.pc.localDescription.sdp,
+        });
       };
 
-      // Re-publishing covers an offer the relay dropped.  The remote side
-      // treats a repeat as "send your answer again", never as an error.
-      for (const delay of RETRY) {
-        setTimeout(() => {
-          if (target.closed || this.destroyed) return;
-          if (target.pc && (target.pc.connectionState === 'connected' || target.pc.signalingState === 'stable')) return;
-          this._pub(target.peer, msg);
-        }, delay);
-      }
-
-      // Only a failed data dial means "the room does not exist"; a failed
-      // media dial is a separate, non-fatal problem.
-      if (target.kind !== 'data') return;
+      // A single offer is a single chance.  The other side may not have been
+      // subscribed yet — a room created a moment ago, or a relay still
+      // connecting — and a lost offer used to cost the whole call.  Repeating
+      // is safe: a duplicate offer for a known sid just replays the answer.
+      send();
+      for (const delay of OFFER_RETRY) setTimeout(send, delay);
 
       if (target.failTimer) clearTimeout(target.failTimer);
       target.failTimer = setTimeout(() => {
-        if (target.closed || this.destroyed) return;
+        if (target.closed || (target.pc && target.pc.connectionState === 'connected')) return;
         this._drop(target);
-        this._emit('error', { type: 'peer-unavailable' });
-      }, 12000);
+      }, 30000);
     }
 
-    // ── receiving ────────────────────────────────────────────────────────────
-    _onPayload(topic, raw) {
+    _onPayload(topic, payload) {
+      if (topic !== this.topicFor()) return;
       let m;
-      try { m = JSON.parse(raw); } catch (_) { return; }
+      try { m = JSON.parse(payload); } catch (_) { return; }
       if (!m || typeof m !== 'object') return;
-      if (m.cid === this.mqtt.cid) return;          // our own echo
+      // Ignore our own echoes.
+      if (m.cid === this.mqtt.cid) return;
 
       this._tr('recv', (m.t || '?') + (m.kind ? '/' + m.kind : '') + ' to=' + (m.to || '').slice(-6) + ' sid=' + (m.sid || '').slice(0, 6));
 
@@ -1876,16 +2159,12 @@
     _inOffer(m) {
       if (m.to !== this.id) return;
 
-      // A repeated offer means our answer never arrived.  Re-send the
-      // cached answer instead of ignoring the retry.
       const known = this._bySid.get(m.sid);
       if (known) {
         if (known.answerSdp && !known.closed) this._sendAnswer(known);
         return;
       }
 
-      // Glare: both sides dialled at once.  The smaller sid wins on both
-      // sides, so exactly one connection survives each collision.
       const mine = this._out.get(m.from + '|' + m.kind);
       if (mine && mine.sid && mine.sid < m.sid) return;
       if (mine) this._drop(mine);
@@ -1967,7 +2246,6 @@
         try { mc.remoteStream.addTrack(ev.track); } catch (_) {}
         mc._emit('stream', mc.remoteStream);
       };
-      // A failed connection carries no usable state: redial from scratch.
       mc.pc.onconnectionstatechange = () => {
         if (mc.pc.connectionState !== 'failed') return;
         if (mc.closed || this.destroyed) return;
@@ -1981,8 +2259,6 @@
       const tries = (old._tries || 0) + 1;
       this._drop(old);
       if (tries > 3 || !stream) {
-        // Media never connected.  With no relay the usual cause is a symmetric
-        // NAT on both sides, so say so instead of failing silently.
         this._emit('error', { type: 'media-failed', peer: remote });
         return;
       }
@@ -2017,6 +2293,17 @@
   }
 
   global.Peer = Peer;
+  // The account layer opens its own connection to the same relay.  Sharing one
+  // connection would couple sign-in to whatever room happens to be open.
+  global.RuporBus = {
+    Mqtt,
+    MqttReader,
+    mqttRead,
+    mqttReadNewest,
+    mqttReadEach,
+    ROOT: 'rupor/v3',
+    hex,
+  };
 })(window);
 </script>
 <script>
@@ -3462,600 +3749,577 @@
 </script>
 <!-- social:begin -->
 <script>
-/* Accounts, friends and groups for Рупор.
+/* Accounts, groups and chat for Рупор.
 
-   Video and audio still travel directly between browsers; this layer only
-   stores the social graph — who you are, who your friends are, which groups
-   you belong to.  It talks to Supabase over plain HTTPS with fetch(), so the
-   page stays a single file with no external scripts.
+   ACCOUNTS: stored entirely in localStorage — no server, no MQTT.
+   Sign up = choose a username and password; both are stored locally.
+   The user ID is derived from (username + password) so the same
+   credentials always produce the same ID, even from a different device
+   that has the credentials re-entered.
 
-   Nothing here runs until a project URL and key are configured below.  Until
-   then `Rupor.api.ready === false` and the interface falls back to the
-   no-account mode that always worked. */
+   GROUPS: one retained MQTT topic per group holds the group name and
+   the list of member display names.  Anyone with the 8-character invite
+   code can join.  No account lookup is needed — you just write your
+   display name into the member list.
+
+   FRIENDS: removed.  Invite people by sharing a group code or a call room.
+
+   CALLS / CHAT: unchanged — MQTT for signalling and group chat.
+
+   Everything degrades safely: with no account the app still makes plain
+   calls using whatever name is typed in the entry screen. */
 (function (global) {
   'use strict';
 
-  // ── CONFIGURATION ─────────────────────────────────────────────────────────
-  // Fill these two in from Supabase → Project Settings → API.
-  // Both are safe to publish: the anon key is designed for browsers, and row
-  // level security decides what each signed-in user may read or write.
-  // They can also be set at runtime without rebuilding the file:
-  //   localStorage.rup_supabase = '{"url":"https://xxx.supabase.co","key":"..."}'
-  const FALLBACK = { url: '', key: '' };
+  const Bus = global.RuporBus;
+  if (!Bus) return;
 
-  function config() {
+  const ROOT = Bus.ROOT + '/net/v2';
+  const GROUP_SHARDS = 32;
+  const CHAT_KEEP = 60;
+
+  // ── STORAGE KEYS ──────────────────────────────────────────────────────────
+  const K_SESSION = 'rup_acct2';   // { id, username, display }
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  const enc = new TextEncoder();
+
+  function hex(n) { return Bus.hex(n); }
+
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // A stable ID derived from credentials so the same login always gives
+  // the same ID.  Not a security guarantee — just stable identity across devices.
+  async function deriveId(username, password) {
+    const raw = await sha256('rupor-id:' + username.toLowerCase() + ':' + password);
+    return raw.slice(0, 16);
+  }
+
+  function shard(key, count) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 1000003;
+    return h % count;
+  }
+
+  function slug(name) {
+    return String(name || '').toLowerCase().replace(/[^a-z0-9_.-]+/g, '_');
+  }
+
+  function safeParse(text) {
+    if (!text) return null;
+    try { return JSON.parse(text); } catch (_) { return null; }
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // ── ACCOUNT (localStorage only) ───────────────────────────────────────────
+  const NAME_RE = /^[a-zA-Z0-9_.-]{3,24}$/;
+
+  let session = null;   // { id, username, display }
+  let profile = null;   // { id, username, display_name }
+
+  function loadSession() {
     try {
-      const raw = global.localStorage && global.localStorage.getItem('rup_supabase');
+      const raw = global.localStorage.getItem(K_SESSION);
       if (raw) {
-        const j = JSON.parse(raw);
-        if (j && j.url && j.key) return { url: String(j.url).replace(/\/+$/, ''), key: String(j.key) };
+        const s = JSON.parse(raw);
+        if (s && s.id && s.username) {
+          session = s;
+          profile = { id: s.id, username: s.username, display_name: s.display || s.username };
+        }
       }
-    } catch (_) {}
-    return { url: FALLBACK.url, key: FALLBACK.key };
-  }
-
-  const SESSION_KEY = 'rup_session';
-  const PROFILE_KEY = 'rup_profile';
-
-  let session = null;    // { access_token, refresh_token, user: { id } }
-  let profile = null;    // { id, username, display_name, color }
-  let cfg = config();
-
-  const listeners = {};
-  function on(ev, fn) { (listeners[ev] || (listeners[ev] = [])).push(fn); return api; }
-  function emit(ev, arg) {
-    for (const fn of listeners[ev] || []) { try { fn(arg); } catch (e) { console.error(e); } }
-  }
-
-  function loadStored() {
-    try {
-      const s = global.localStorage.getItem(SESSION_KEY);
-      if (s) session = JSON.parse(s);
-      const p = global.localStorage.getItem(PROFILE_KEY);
-      if (p) profile = JSON.parse(p);
     } catch (_) { session = null; profile = null; }
   }
 
-  function storeSession(s) {
+  function saveSession(s) {
     session = s;
     try {
-      if (s) global.localStorage.setItem(SESSION_KEY, JSON.stringify(s));
-      else global.localStorage.removeItem(SESSION_KEY);
+      if (s) global.localStorage.setItem(K_SESSION, JSON.stringify(s));
+      else global.localStorage.removeItem(K_SESSION);
     } catch (_) {}
   }
 
-  function storeProfile(p) {
-    profile = p;
-    try {
-      if (p) global.localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-      else global.localStorage.removeItem(PROFILE_KEY);
-    } catch (_) {}
-  }
+  // Also keep a hash of the password in localStorage so sign-in can verify it
+  // without a server.  The hash is only stored locally and never sent anywhere.
+  function pwKey(username) { return 'rup_pw_' + slug(username); }
 
-  // ── HTTP ──────────────────────────────────────────────────────────────────
-  // A token that expired mid-session would otherwise look like a random 401,
-  // so every authorised call refreshes once before giving up.
-  async function request(path, opts, retried) {
-    if (!cfg.url || !cfg.key) throw new Error('NOT_CONFIGURED');
-
-    const headers = Object.assign(
-      { apikey: cfg.key, 'Content-Type': 'application/json' },
-      (opts && opts.headers) || {}
-    );
-    if (session && session.access_token) {
-      headers.Authorization = 'Bearer ' + session.access_token;
-    }
-
-    const res = await fetch(cfg.url + path, Object.assign({}, opts, { headers }));
-
-    if (res.status === 401 && !retried && session && session.refresh_token) {
-      const ok = await refresh();
-      if (ok) return request(path, opts, true);
-    }
-
-    const text = await res.text();
-    let body = null;
-    if (text) { try { body = JSON.parse(text); } catch (_) { body = text; } }
-
-    if (!res.ok) {
-      const msg = (body && (body.message || body.error_description || body.msg || body.hint)) || ('HTTP ' + res.status);
-      const err = new Error(msg);
-      err.status = res.status;
-      err.body = body;
-      throw err;
-    }
-    return body;
-  }
-
-  async function refresh() {
-    if (!session || !session.refresh_token) return false;
-    try {
-      const res = await fetch(cfg.url + '/auth/v1/token?grant_type=refresh_token', {
-        method: 'POST',
-        headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: session.refresh_token }),
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok || !body || !body.access_token) return false;
-
-      // The refresh response normally repeats the user, but relying on that
-      // would blank the id if it ever did not — and every query is keyed by it.
-      const prev = session.user || {};
-      const next = body.user || {};
-      storeSession({
-        access_token: body.access_token,
-        refresh_token: body.refresh_token || session.refresh_token,
-        user: {
-          id: next.id || prev.id,
-          email: next.email || prev.email,
-        },
-      });
-      return true;
-    } catch (_) { return false; }
-  }
-
-  function rest(path, opts) {
-    return request('/rest/v1' + path, opts);
-  }
-
-  // ── AUTH ──────────────────────────────────────────────────────────────────
-  // Email and password, but the email is never shown or used for mail: it is
-  // derived from the username so signing in needs nothing but a name and a
-  // password.  Confirmation is off, so no message has to arrive anywhere.
-  const DOMAIN = 'rupor.app';
-  const emailFor = (username) => username.toLowerCase() + '@' + DOMAIN;
-
-  // A profile row is what everything else points at: friendships, group
-  // membership, presence.  Registration can be interrupted between creating
-  // the auth user and writing that row — the name is then taken but the
-  // account is unusable.  Both signing in and restoring therefore create the
-  // row if it is missing, so such an account repairs itself.
-  async function ensureProfile() {
-    if (!session) return null;
-    const rows = await rest('/profiles?id=eq.' + session.user.id + '&select=*');
-    if (rows && rows[0]) { storeProfile(rows[0]); return profile; }
-
-    // The original username is not in the session that comes back from a
-    // sign-in, so it is asked for explicitly.  Without this a user whose
-    // registration was interrupted could never get back the name they chose.
-    let username = '';
-    try {
-      const mine = await request('/rest/v1/rpc/my_username', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({}),
-      });
-      if (typeof mine === 'string' && mine) username = mine;
-    } catch (_) {}
-    if (!username) {
-      const email = (session.user && session.user.email) || '';
-      username = email.split('@')[0] || ('user' + session.user.id.slice(0, 6));
-    }
-
-    const made = await rest('/profiles', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({
-        id: session.user.id,
-        username: username.toLowerCase(),
-        display_name: username,
-        color: null,
-      }),
-    });
-    storeProfile(Array.isArray(made) ? made[0] : made);
-    return profile;
-  }
+  // The chosen display name is remembered per account as well, otherwise a
+  // sign-out followed by a sign-in would quietly fall back to the username.
+  function dnKey(username) { return 'rup_dn_' + slug(username); }
 
   async function signUp(username, password, displayName) {
-    const res = await fetch(cfg.url + '/auth/v1/signup', {
-      method: 'POST',
-      headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailFor(username), password }),
-    });
-    const data = await res.json().catch(() => null);
+    const name = String(username || '').trim();
+    if (!NAME_RE.test(name)) throw new Error('BAD_NAME');
+    if (String(password || '').length < 6) throw new Error('SHORT_PASSWORD');
 
-    if (!res.ok) {
-      const msg = (data && (data.msg || data.message || data.error_description)) || 'SIGNUP_FAILED';
-      throw new Error(msg);
-    }
+    // Check if the name is already taken locally.
+    if (global.localStorage.getItem(pwKey(name))) throw new Error('NAME_TAKEN');
 
-    // Confirmation disabled: a session comes straight back.  When it does not,
-    // signing in immediately afterwards produces one.
-    let s = null;
-    if (data && data.access_token) {
-      s = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        user: { id: data.user && data.user.id, email: data.user && data.user.email },
-      };
-      storeSession(s);
-    } else {
-      try {
-        s = await signIn(username, password);
-        if (!s) throw new Error('SIGNUP_FAILED');
-        return profile;   // signIn already loaded the profile
-      } catch (e) {
-        // The account was created but cannot be used until the address is
-        // confirmed — which means the setup step was skipped.
-        const raw = (e && e.message) || '';
-        if (/confirm|not confirmed|Email not confirmed/i.test(raw)) {
-          throw new Error('EMAIL_CONFIRMATION_ON');
-        }
-        throw e;
-      }
-    }
+    const id = await deriveId(name, password);
+    const display = String(displayName || name).trim().slice(0, 32) || name;
+    const hash = await sha256('rupor-pw:' + name.toLowerCase() + ':' + password);
 
-    // Write the profile, but tolerate one already existing: a retried
-    // registration must not fail at the last step.
-    try {
-      const created = await rest('/profiles', {
-        method: 'POST',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
-          id: s.user.id,
-          username: username.toLowerCase(),
-          display_name: displayName || username,
-          color: null,
-        }),
-      });
-      storeProfile(Array.isArray(created) ? created[0] : created);
-    } catch (_) {
-      await ensureProfile();
-    }
-
-    // A display name different from the login name is worth a second write.
-    if (profile && displayName && displayName !== profile.display_name) {
-      try {
-        const updated = await rest('/profiles?id=eq.' + s.user.id, {
-          method: 'PATCH',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify({ display_name: displayName }),
-        });
-        if (Array.isArray(updated) && updated[0]) storeProfile(updated[0]);
-      } catch (_) {}
-    }
+    global.localStorage.setItem(pwKey(name), hash);
+    global.localStorage.setItem(dnKey(name), display);
+    const s = { id, username: name.toLowerCase(), display };
+    saveSession(s);
+    profile = { id, username: name.toLowerCase(), display_name: display };
     return profile;
   }
 
   async function signIn(username, password) {
-    const res = await fetch(cfg.url + '/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      headers: { apikey: cfg.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailFor(username), password }),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data || !data.access_token) {
-      const msg = (data && (data.error_description || data.msg || data.message)) || 'SIGNIN_FAILED';
-      throw new Error(msg);
-    }
-    const s = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      user: { id: data.user && data.user.id, email: data.user && data.user.email },
-    };
-    storeSession(s);
-    await ensureProfile();
+    const name = String(username || '').trim();
+    if (!NAME_RE.test(name)) throw new Error('SIGNIN_FAILED');
+
+    const stored = global.localStorage.getItem(pwKey(name));
+    if (!stored) throw new Error('NO_SUCH_USER');
+
+    const hash = await sha256('rupor-pw:' + name.toLowerCase() + ':' + password);
+    if (hash !== stored) throw new Error('SIGNIN_FAILED');
+
+    const id = await deriveId(name, password);
+    const saved = global.localStorage.getItem(dnKey(name));
+    const display = (saved && saved.trim()) || name;
+    const s = { id, username: name.toLowerCase(), display };
+    saveSession(s);
+    profile = { id, username: name.toLowerCase(), display_name: display };
     return profile;
-  }
-
-  async function signOut() {
-    try {
-      await request('/auth/v1/logout', { method: 'POST' });
-    } catch (_) {}
-    storeSession(null);
-    storeProfile(null);
-    emit('auth', null);
-  }
-
-  async function loadMyProfile() {
-    if (!session) return null;
-    return ensureProfile();
   }
 
   async function restore() {
-    loadStored();
-    if (!session || !cfg.url) return null;
-    try {
-      // Refreshes an expired token if needed, then repairs a missing profile.
-      await ensureProfile();
-    } catch (e) {
-      // An expired refresh token is the one case where the stored login is
-      // genuinely gone; anything else (offline) should not log the user out.
-      if (e.status === 401) {
-        storeSession(null);
-        storeProfile(null);
-        emit('auth', null);
-        return null;
-      }
-    }
-    return profile;
+    loadSession();
+    return profile || null;
   }
 
-  // ── FRIENDS ───────────────────────────────────────────────────────────────
-  async function findByUsername(username) {
-    const rows = await rest('/profiles?username=eq.' + encodeURIComponent(username.toLowerCase()) + '&select=*');
-    return rows && rows[0] ? rows[0] : null;
+  function signOut() {
+    stopPresence();
+    if (profile) drop(ROOT + '/p/' + profile.id);
+    saveSession(null);
+    profile = null;
+    return Promise.resolve();
   }
 
-  async function friendGraph() {
-    if (!session) return { friends: [], incoming: [], outgoing: [] };
-    const me = session.user.id;
-    const rows = await rest(
-      '/friendships?or=(requester.eq.' + me + ',addressee.eq.' + me + ')&select=*'
-    );
+  // ── THE WRITER BUS ────────────────────────────────────────────────────────
+  // Long-lived connection for retained writes and persistent subscriptions
+  // (presence, chat wildcards).  Ad-hoc reads go through fresh connections via
+  // mqttRead() so this bus never churns subscriptions.
+  let bus = null;
 
-    const otherIds = [...new Set((rows || []).map((r) => (r.requester === me ? r.addressee : r.requester)))];
-    let people = [];
-    if (otherIds.length) {
-      people = await rest('/profiles?id=in.(' + otherIds.join(',') + ')&select=*');
-    }
-    const byId = new Map((people || []).map((p) => [p.id, p]));
-
-    const friends = [], incoming = [], outgoing = [];
-    for (const r of rows || []) {
-      const isReq = r.requester === me;
-      const other = byId.get(isReq ? r.addressee : r.requester);
-      if (!other) continue;
-      const item = { row: r.id, status: r.status, user: other, outgoing: isReq };
-      if (r.status === 'accepted') friends.push(item);
-      else if (isReq) outgoing.push(item);
-      else incoming.push(item);
-    }
-    return { friends, incoming, outgoing };
-  }
-
-  async function addFriend(username) {
-    const other = await findByUsername(username);
-    if (!other) throw new Error('NO_SUCH_USER');
-    if (other.id === session.user.id) throw new Error('SELF');
-
-    // If they already asked us, accepting is the useful action, not a new row.
-    const existing = await rest(
-      '/friendships?or=(and(requester.eq.' + session.user.id + ',addressee.eq.' + other.id + '),and(requester.eq.' + other.id + ',addressee.eq.' + session.user.id + '))&select=*'
-    );
-    const row = existing && existing[0];
-    if (row) {
-      if (row.status === 'accepted') throw new Error('ALREADY_FRIENDS');
-      if (row.addressee === session.user.id) {
-        await acceptFriend(row.id);
-        return { accepted: true, user: other };
-      }
-      throw new Error('ALREADY_REQUESTED');
-    }
-
-    await rest('/friendships', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ requester: session.user.id, addressee: other.id, status: 'pending' }),
+  function ensureBus() {
+    if (bus) return bus;
+    bus = new Bus.Mqtt({
+      onReady() {},
+      onMessage(topic, payload) {
+        const value = safeParse(payload);
+        for (const fn of listeners) {
+          try { fn(topic, value); } catch (_) {}
+        }
+      },
     });
-    return { accepted: false, user: other };
+    bus.start();
+    return bus;
   }
 
-  async function acceptFriend(rowId) {
-    await rest('/friendships?id=eq.' + rowId, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'accepted' }),
-    });
+  const listeners = new Set();
+
+  // ── RETAINED WRITES (QoS 1, retry) ────────────────────────────────────────
+  function put(topic, value) {
+    ensureBus();
+    return store(topic, JSON.stringify(value));
   }
 
-  async function removeFriend(rowId) {
-    await rest('/friendships?id=eq.' + rowId, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  function drop(topic) {
+    ensureBus();
+    return store(topic, '');
+  }
+
+  async function store(topic, text) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const results = bus.publishRaw(topic, text, true);
+      if (!results.length) { await sleep(400); continue; }
+      const oks = await Promise.all(results);
+      if (oks.some(Boolean)) return true;
+      await sleep(300);
+    }
+    return false;
+  }
+
+  // ── AD-HOC READS ──────────────────────────────────────────────────────────
+  async function readTopic(topic, timeoutMs) {
+    const raw = await Bus.mqttRead(topic, timeoutMs || 7000);
+    return safeParse(raw);
+  }
+
+  // For group records: both brokers are consulted and the higher revision wins,
+  // so a broker that has not caught up cannot hand back a stale member list.
+  async function readGroup(topic, timeoutMs) {
+    return Bus.mqttReadNewest(topic, timeoutMs || 7000);
+  }
+
+  // ── PRESENCE ──────────────────────────────────────────────────────────────
+  let beatTimer = null;
+  let beatWho = null;
+
+  function beat() {
+    if (!profile) return;
+    put(ROOT + '/p/' + profile.id, { id: profile.id, at: Date.now() });
+  }
+
+  function startPresence() {
+    if (!profile) return;
+    if (beatTimer && beatWho === profile.id) return;
+    stopPresence();
+    beatWho = profile.id;
+    beat();
+    beatTimer = setInterval(beat, 20000);
+  }
+
+  function stopPresence() {
+    if (beatTimer) { clearInterval(beatTimer); beatTimer = null; }
+    beatWho = null;
+  }
+
+  async function onlineAmong(ids) {
+    const online = new Set();
+    const list = (ids || []).filter(Boolean);
+    if (!list.length) return online;
+    await Promise.all(list.map(async (id) => {
+      const hit = await readTopic(ROOT + '/p/' + id, 2500);
+      if (hit && Date.now() - (hit.at || 0) < 50000) online.add(id);
+    }));
+    return online;
   }
 
   // ── GROUPS ────────────────────────────────────────────────────────────────
-  async function myGroups() {
-    if (!session) return [];
-    const me = session.user.id;
-    const memberships = await rest('/group_members?member=eq.' + me + '&select=group_id,role');
-    const ids = (memberships || []).map((m) => m.group_id);
-    if (!ids.length) return [];
+  // A group record holds: id, name, invite code, and an array of member
+  // objects { id, display }.  No account lookup needed — display names are
+  // stored directly in the group record.
+  const groupTopic = (id) => ROOT + '/g/' + shard(id, GROUP_SHARDS) + '/' + id;
+  const inviteTopic = (code) => ROOT + '/gi/' + slug(code);
 
-    const groups = await rest('/groups?id=in.(' + ids.join(',') + ')&select=*');
-    const people = await rest('/group_members?group_id=in.(' + ids.join(',') + ')&select=group_id,member,role');
-    const userIds = [...new Set((people || []).map((p) => p.member))];
-    const profiles = userIds.length
-      ? await rest('/profiles?id=in.(' + userIds.join(',') + ')&select=*')
-      : [];
-    const byId = new Map((profiles || []).map((p) => [p.id, p]));
-
-    return (groups || []).map((g) => {
-      const role = (memberships.find((m) => m.group_id === g.id) || {}).role || 'member';
-      const members = (people || [])
-        .filter((p) => p.group_id === g.id)
-        .map((p) => Object.assign({ role: p.role }, byId.get(p.member) || {}))
-        .filter((p) => p.id);
-      return Object.assign({}, g, { role, members });
-    });
+  // My group membership list lives in localStorage (not MQTT) so it is
+  // always available instantly and never needs a round-trip.  It is scoped to
+  // the account: two people sharing one browser must not see each other's
+  // groups.
+  function myGroupKey() {
+    return 'rup_mygroups2' + (profile ? ':' + profile.id : '');
   }
 
-  function inviteCode() {
-    // Readable, no vowels that form words, no characters that look alike.
-    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function myGroupIdSet() {
+    try {
+      const raw = global.localStorage.getItem(myGroupKey());
+      if (raw) return new Set(JSON.parse(raw));
+    } catch (_) {}
+    return new Set();
+  }
+
+  function saveMyGroupIds(ids) {
+    try { global.localStorage.setItem(myGroupKey(), JSON.stringify(Array.from(ids))); } catch (_) {}
+  }
+
+  function makeInvite() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const bytes = new Uint8Array(8);
-    (global.crypto || {}).getRandomValues
-      ? global.crypto.getRandomValues(bytes)
-      : bytes.forEach((_, i) => (bytes[i] = Math.floor(Math.random() * 256)));
+    crypto.getRandomValues(bytes);
     let out = '';
-    for (let i = 0; i < 8; i++) out += abc[bytes[i] % abc.length];
+    for (const b of bytes) out += alphabet[b % alphabet.length];
+    return out;
+  }
+
+  // A copy of the group record as this device last saw or wrote it.  It lets the
+  // member list paint instantly after joining — before the retained write has
+  // travelled back — and it is only ever used when it is at least as new as
+  // whatever the broker returned.
+  const K_GROUP_CACHE = 'rup_gcache2';
+
+  function cacheKey() {
+    return K_GROUP_CACHE + (profile ? ':' + profile.id : '');
+  }
+
+  function cachedGroup(gid) {
+    try {
+      const all = safeParse(global.localStorage.getItem(cacheKey())) || {};
+      return all[gid] || null;
+    } catch (_) { return null; }
+  }
+
+  function cacheGroup(rec) {
+    if (!rec || !rec.id) return;
+    try {
+      const all = safeParse(global.localStorage.getItem(cacheKey())) || {};
+      const prev = all[rec.id];
+      if (prev && (Number(prev.rev) || 0) > (Number(rec.rev) || 0)) return;
+      all[rec.id] = rec;
+      global.localStorage.setItem(cacheKey(), JSON.stringify(all));
+    } catch (_) {}
+  }
+
+  function forgetGroup(gid) {
+    try {
+      const all = safeParse(global.localStorage.getItem(cacheKey())) || {};
+      delete all[gid];
+      global.localStorage.setItem(cacheKey(), JSON.stringify(all));
+    } catch (_) {}
+  }
+
+  // Read a group the freshest way available: the higher of the broker's copy
+  // and our own cached copy.
+  async function groupRecord(gid, timeoutMs) {
+    const fromNet = await readGroup(groupTopic(gid), timeoutMs);
+    const local = cachedGroup(gid);
+    if (!fromNet) return local;
+    if (!local) return fromNet;
+    return (Number(fromNet.rev) || 0) >= (Number(local.rev) || 0) ? fromNet : local;
+  }
+
+  // Writes carry a revision one higher than whatever we last saw, so readers on
+  // either broker can tell which copy is newer.  put() resolves only after both
+  // brokers have acknowledged, so the record is durable by the time this
+  // returns; the local cache makes our own view instantaneous either way.
+  async function writeGroup(rec) {
+    const next = { ...rec, rev: (Number(rec.rev) || 0) + 1 };
+    cacheGroup(next);
+    await put(groupTopic(next.id), next);
+    return next;
+  }
+
+  async function myGroups() {
+    if (!profile) return [];
+    const ids = myGroupIdSet();
+    const out = [];
+    await Promise.all(Array.from(ids).map(async (gid) => {
+      const g = await groupRecord(gid, 5000);
+      if (!g) return;
+      out.push({
+        id: g.id,
+        name: g.name,
+        invite: g.invite,
+        owner: g.owner,
+        role: g.owner === profile.id ? 'owner' : 'member',
+        members: g.members || [],
+      });
+    }));
+    out.sort((a, b) => a.name.localeCompare(b.name));
     return out;
   }
 
   async function createGroup(name) {
-    const gid = (global.crypto && global.crypto.randomUUID)
-      ? global.crypto.randomUUID()
-      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-          const r = (Math.random() * 16) | 0;
-          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-        });
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    const clean = String(name || '').trim().slice(0, 60);
+    if (!clean) throw new Error('GROUP_NAME');
 
-    await rest('/groups', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ id: gid, name, owner: session.user.id, invite: inviteCode() }),
-    });
-    // The creator must also be a member, or the group would be invisible to
-    // their own listing.
-    await rest('/group_members', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ group_id: gid, member: session.user.id, role: 'owner' }),
-    });
-    return gid;
+    const id = hex(6);
+    const invite = makeInvite();
+    const rec = {
+      id,
+      name: clean,
+      owner: profile.id,
+      invite,
+      members: [{ id: profile.id, display: profile.display_name }],
+      made: Date.now(),
+      rev: 0,
+    };
+    await writeGroup(rec);
+    await put(inviteTopic(invite), { id });
+
+    const ids = myGroupIdSet();
+    ids.add(id);
+    saveMyGroupIds(ids);
+    return id;
   }
 
   async function joinGroup(code) {
-    return request('/rest/v1/rpc/join_group', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ invite_code: code }),
-    });
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    const clean = String(code || '').trim().toUpperCase();
+    if (!clean) throw new Error('GROUP_NOT_FOUND');
+
+    const dir = await readTopic(inviteTopic(clean), 6000);
+    if (!dir || !dir.id) throw new Error('GROUP_NOT_FOUND');
+
+    const g = await groupRecord(dir.id, 7000);
+    if (!g) throw new Error('GROUP_NOT_FOUND');
+
+    // Add ourselves if not already a member.
+    const members = (g.members || []).filter((m) => m.id !== profile.id);
+    members.push({ id: profile.id, display: profile.display_name });
+    await writeGroup({ ...g, members });
+
+    const ids = myGroupIdSet();
+    ids.add(g.id);
+    saveMyGroupIds(ids);
+    return g.id;
   }
 
   async function leaveGroup(gid) {
-    // Through the function rather than a plain delete: the database refuses to
-    // let the owner orphan their own group.
-    try {
-      await request('/rest/v1/rpc/leave_group', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ gid }),
-      });
-    } catch (e) {
-      if (/OWNER_CANNOT_LEAVE/.test((e && e.message) || '')) throw new Error('OWNER_CANNOT_LEAVE');
-      throw e;
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    const g = await groupRecord(gid, 7000);
+    if (g) {
+      if (g.owner === profile.id) throw new Error('OWNER_CANNOT_LEAVE');
+      const members = (g.members || []).filter((m) => m.id !== profile.id);
+      await writeGroup({ ...g, members });
     }
+    const ids = myGroupIdSet();
+    ids.delete(gid);
+    saveMyGroupIds(ids);
+    return true;
   }
 
   async function deleteGroup(gid) {
-    await rest('/groups?id=eq.' + gid, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
-  }
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    const g = await groupRecord(gid, 5000);
+    if (!g) throw new Error('GROUP_NOT_FOUND');
+    if (g.owner !== profile.id) throw new Error('NOT_OWNER');
 
-  // ── PRESENCE ──────────────────────────────────────────────────────────────
-  // The table only records a heartbeat; whether somebody is online is decided
-  // by how fresh their mark is, so a closed tab stops looking online on its
-  // own without any server-side bookkeeping.
-  const ONLINE_WINDOW = 45000;
-  let presenceTimer = null;
-  let presenceWho = null;   // the user id the running heartbeat belongs to
-
-  async function beat() {
-    if (!session) return;
-    try {
-      await rest('/presence', {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ user_id: session.user.id, last_seen: new Date().toISOString() }),
-      });
-    } catch (_) {}
-  }
-
-  function startPresence() {
-    if (!session) return;
-    // Signing in as somebody else while a heartbeat is already running must
-    // not leave the old identity marked online, or the new one unmarked.
-    if (presenceTimer && presenceWho === session.user.id) return;
-    stopPresence();
-    presenceWho = session.user.id;
-    beat();
-    presenceTimer = setInterval(beat, 20000);
-  }
-
-  function stopPresence() {
-    if (presenceTimer) { clearInterval(presenceTimer); presenceTimer = null; }
-    presenceWho = null;
-  }
-
-  async function onlineAmong(ids) {
-    if (!session || !ids || !ids.length) return new Set();
-    const rows = await rest('/presence?user_id=in.(' + ids.join(',') + ')&select=user_id,last_seen');
-    const cutoff = Date.now() - ONLINE_WINDOW;
-    const out = new Set();
-    for (const r of rows || []) {
-      if (new Date(r.last_seen).getTime() >= cutoff) out.add(r.user_id);
+    // A retained record lives in each broker separately, and drop() resolves as
+    // soon as one broker acknowledges.  The other would happily keep serving the
+    // group, so confirm both have actually let go of it before reporting done.
+    await drop(inviteTopic(g.invite));
+    await drop(groupTopic(gid));
+    await drop(inviteTopic(g.invite));
+    await drop(groupTopic(gid));
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const left = await Bus.mqttReadEach(groupTopic(gid), 4000);
+      if (left.every((v) => !v)) break;
+      await drop(groupTopic(gid));
+      await drop(inviteTopic(g.invite));
+      await sleep(500);
     }
-    return out;
+    forgetGroup(gid);
+
+    const ids = myGroupIdSet();
+    ids.delete(gid);
+    saveMyGroupIds(ids);
+    return true;
+  }
+
+  // ── CHAT ──────────────────────────────────────────────────────────────────
+  const chatTopic = (gid, seq) => ROOT + '/c/' + gid + '/' + seq;
+  let chatGid = null;
+  let chatSeen = new Map();
+  let chatSubs = [];
+
+  async function openChat(gid) {
+    if (chatGid === gid) return;
+    closeChat();
+    chatGid = gid;
+    chatSeen = new Map();
+    if (!gid) return;
+    ensureBus();
+    const filter = ROOT + '/c/' + gid + '/+';
+    chatSubs.push(filter);
+    bus.subscribe(filter);
+  }
+
+  function closeChat() {
+    for (const f of chatSubs) {
+      try { bus && bus.unsubscribe(f); } catch (_) {}
+    }
+    chatSubs = [];
+    chatGid = null;
+    chatSeen = new Map();
+  }
+
+  function onChat(fn) {
+    const wrap = (topic, value) => {
+      if (!chatGid) return;
+      const prefix = ROOT + '/c/' + chatGid + '/';
+      if (!topic.startsWith(prefix)) return;
+      if (!value || !value.text) return;
+      const seq = Number(topic.slice(prefix.length));
+      if (!seq) return;
+      if (chatSeen.has(seq)) return;
+      chatSeen.set(seq, value);
+      fn(value);
+    };
+    listeners.add(wrap);
+    return () => listeners.delete(wrap);
+  }
+
+  function sendChat(text) {
+    if (!profile || !chatGid) return false;
+    const clean = String(text || '').trim().slice(0, 500);
+    if (!clean) return false;
+    const seq = Date.now();
+    const msg = { from: profile.id, name: profile.display_name, text: clean, at: seq };
+    put(chatTopic(chatGid, seq), msg);
+    const seqs = Array.from(chatSeen.keys()).sort((a, b) => a - b);
+    for (const old of seqs.slice(0, Math.max(0, seqs.length - CHAT_KEEP + 1))) {
+      if (old === seq) continue;
+      drop(chatTopic(chatGid, old));
+      chatSeen.delete(old);
+    }
+    return true;
   }
 
   // ── CALL INVITES ──────────────────────────────────────────────────────────
-  async function inviteToCall(target) {
-    const body = { from_user: session.user.id, room: target.room };
-    if (target.userId) body.to_user = target.userId;
-    if (target.groupId) body.group_id = target.groupId;
-    await rest('/call_invites', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify(body),
-    });
+  const inviteFor = (uid) => ROOT + '/ci/' + uid;
+  const seenInvite = new Set();
+
+  async function inviteToCall(opts) {
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    const room = String((opts && opts.room) || '').toUpperCase();
+    if (!room) throw new Error('NO_ROOM');
+
+    let targets = [];
+    if (opts.userId) {
+      targets = [opts.userId];
+    } else if (opts.groupId) {
+      const g = await groupRecord(opts.groupId, 5000);
+      if (g) targets = (g.members || []).filter((m) => m.id !== profile.id).map((m) => m.id);
+    }
+
+    // Wait for the broker acknowledgement: the caller reports "invited" and a
+    // write still in flight would make that a lie.
+    await Promise.all(targets.map((uid) => put(inviteFor(uid), {
+      id: hex(6),
+      from: profile.id,
+      name: profile.display_name,
+      room,
+      at: Date.now(),
+    })));
+    return targets.length;
   }
 
+  // The invitation is written to every broker, but a reader may reach one that
+  // has not been handed the retained copy yet.  A couple of short retries covers
+  // that gap without making a genuinely absent invitation look present.
   async function pendingInvites() {
-    if (!session) return [];
-    const me = session.user.id;
-    const groups = await myGroups();
-    const gids = groups.map((g) => g.id);
-
-    const filter = gids.length
-      ? 'or=(to_user.eq.' + me + ',group_id.in.(' + gids.join(',') + '))'
-      : 'to_user=eq.' + me;
-
-    const rows = await rest('/call_invites?' + filter + '&select=*&order=created_at.desc&limit=8');
-    const fresh = (rows || []).filter((r) => Date.now() - new Date(r.created_at).getTime() < 10 * 60 * 1000);
-    if (!fresh.length) return [];
-
-    const senderIds = [...new Set(fresh.map((r) => r.from_user))];
-    const senders = await rest('/profiles?id=in.(' + senderIds.join(',') + ')&select=*');
-    const byId = new Map((senders || []).map((p) => [p.id, p]));
-
-    return fresh
-      .map((r) => ({
-        id: r.id,
-        room: r.room,
-        groupId: r.group_id,
-        from: byId.get(r.from_user) || { display_name: 'Участник' },
-      }))
-      // Do not offer a call the user themselves started for a group.
-      .filter((i) => i.from.id !== me);
+    if (!profile) return [];
+    let inv = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      inv = await readTopic(inviteFor(profile.id), 4000);
+      if (inv && inv.id) break;
+      if (attempt < 2) await sleep(900);
+    }
+    if (!inv || !inv.id) return [];
+    if (Date.now() - (inv.at || 0) > 10 * 60 * 1000) return [];
+    if (seenInvite.has(inv.id)) return [];
+    return [inv];
   }
 
   async function dismissInvite(id) {
-    await rest('/call_invites?id=eq.' + id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    if (id) seenInvite.add(id);
+    if (!profile) return;
+    drop(inviteFor(profile.id));
+    return true;
   }
 
   // ── PUBLIC SURFACE ────────────────────────────────────────────────────────
   const api = {
-    get ready() { return !!(cfg.url && cfg.key); },
-    get signedIn() { return !!session; },
+    get ready() { return true; },
+    get signedIn() { return !!profile && !!session; },
     get profile() { return profile; },
-    get userId() { return session ? session.user.id : null; },
-    on,
-    config: () => cfg,
-    // Lets the interface store credentials entered in the app itself, so the
-    // file does not have to be edited by hand.  Saved where config() reads
-    // from, so it survives a reload.
-    setConfig(url, key) {
-      const clean = {
-        url: String(url || '').trim().replace(/\/+$/, ''),
-        key: String(key || '').trim(),
-      };
-      try {
-        if (clean.url && clean.key) {
-          global.localStorage.setItem('rup_supabase', JSON.stringify(clean));
-        } else {
-          global.localStorage.removeItem('rup_supabase');
-        }
-      } catch (_) {}
-      cfg = clean;
-      return api.ready;
-    },
+    get userId() { return profile ? profile.id : null; },
+    on() { return api; },
+    config: () => ({ url: 'mqtt://relay', key: 'none' }),
+    setConfig() { return true; },
     restore,
     signUp,
     signIn,
     signOut,
-    friendGraph,
-    addFriend,
-    acceptFriend,
-    removeFriend,
     myGroups,
     createGroup,
     joinGroup,
@@ -4067,19 +4331,35 @@
     inviteToCall,
     pendingInvites,
     dismissInvite,
+    openChat,
+    closeChat,
+    onChat,
+    sendChat,
   };
 
-  global.Rupor = { api: api };
+  global.Rupor = global.Rupor || {};
+  global.Rupor.api = api;
+  global.Rupor.probe = {
+    ROOT,
+    groupTopic,
+    slug,
+    shard,
+    state: () => ({
+      busReady: bus ? bus.links.some((l) => l.ready) : false,
+      brokers: bus ? bus.links.filter((l) => l.ready).map((l) => l.i) : [],
+      cid: bus ? bus.cid : null,
+    }),
+  };
 })(window);
 </script>
 <script>
-/* The friends and groups interface.
+/* The groups and chat interface.
 
-   Kept apart from the call itself: this only paints lists, calls the account
-   layer, and asks the call code to open a room.  Every network call is
-   wrapped, because none of this may ever prevent a plain call from working —
-   without configuration the buttons explain themselves and the old entry
-   screen is untouched. */
+   Accounts are local-only (localStorage): sign up picks a username and
+   password, stored in the browser.  No server, no MQTT for accounts.
+   Groups use MQTT for a shared member list; everything else is local.
+
+   Without an account the call screen still works — type a name and join. */
 (function () {
   'use strict';
 
@@ -4096,28 +4376,28 @@
     btnSignout: $('#btn-signout'),
     btnAccount: $('#btn-account'),
     btnSocial: $('#btn-social'),
-    inputFriend: $('#friend-name'),
-    btnAddFriend: $('#btn-add-friend'),
-    friends: $('#friends'),
-    incoming: $('#incoming'),
-    outgoing: $('#outgoing'),
-    invites: $('#invites'),
     groups: $('#groups'),
     groupsList: $('#groups-list'),
     mainTitle: $('#main-title'),
-    friendTab: $('[data-tab="friends"]'),
     groupTab: $('[data-tab="groups"]'),
-    panelFriends: $('#panel-friends'),
+    sideCalls: $('#side-calls'),
+    sideGroups: $('#side-groups'),
     panelGroups: $('#panel-groups'),
-    badgeFriends: $('#badge-friends'),
+    panelChat: $('#panel-chat'),
+    chatTitle: $('#chat-title'),
+    chatBack: $('#chat-back'),
+    chatLog: $('#chat-log-social'),
+    chatForm: $('#chat-form-social'),
+    chatInput: $('#chat-input-social'),
+    invites: $('#invites'),
+    invitesWrap: $('#invites-wrap'),
   };
 
   if (!el.social || !api) return;
 
-  let mode = 'in';
-  let view = 'friends';
   let busy = false;
-  let setup = false;   // the sign-in dialog is also the sync-setup dialog
+  let openChatGid = null;
+  let chatStream = null;
 
   // ── SMALL HELPERS ─────────────────────────────────────────────────────────
   function initials(name) {
@@ -4128,7 +4408,7 @@
 
   function colorFor(id) {
     let h = 0;
-    for (let i = 0; i < String(id || '').length; i++) h = (h * 31 + String(id).charCodeAt(i)) % 360;
+    for (let i = 0; i < String(id || '').length; i++) h = (h * 31 + String(id || '').charCodeAt(i)) % 360;
     return 'oklch(72% 0.14 ' + h + ')';
   }
 
@@ -4137,23 +4417,17 @@
     else console.log(text);
   }
 
-  // Russian wording for the errors the account layer can raise.  Anything
-  // unrecognised is shown as-is rather than hidden behind "что-то пошло не так".
   const ERRORS = {
-    NOT_CONFIGURED: 'Синхронизация не настроена: укажите адрес и ключ Supabase.',
-    NO_SUCH_USER: 'Такого имени нет. Проверьте написание.',
-    SELF: 'Это ваше собственное имя.',
-    ALREADY_FRIENDS: 'Вы уже друзья.',
-    ALREADY_REQUESTED: 'Заявка уже отправлена.',
+    BAD_NAME: 'Имя: 3–24 символа, латиница, цифры, . _ -',
+    SHORT_PASSWORD: 'Пароль не короче 6 символов.',
+    NAME_TAKEN: 'Это имя уже занято. Выберите другое.',
     SIGNIN_FAILED: 'Неверное имя или пароль.',
-    SIGNUP_FAILED: 'Не удалось зарегистрироваться. Возможно, имя занято.',
-    EMAIL_CONFIRMATION_ON:
-      'В проекте Supabase включено подтверждение почты. Отключите его: Authentication → Providers → Email → Confirm email → выключить. Без этого вход невозможен.',
+    NO_SUCH_USER: 'Такого имени нет. Проверьте написание.',
     GROUP_NOT_FOUND: 'Группа с таким кодом не найдена.',
+    GROUP_NAME: 'У группы должно быть название.',
     OWNER_CANNOT_LEAVE: 'Организатор не может выйти из своей группы. Её можно только удалить.',
-    'User already registered': 'Это имя уже занято.',
-    'Invalid login credentials': 'Неверное имя или пароль.',
-    'Password should be at least 6 characters': 'Пароль короче 6 символов.',
+    NOT_OWNER: 'Удалить группу может только организатор.',
+    NO_ROOM: 'Сначала создайте комнату.',
   };
 
   function say(err) {
@@ -4166,72 +4440,24 @@
     const p = api.profile;
     const signedIn = !!p;
     el.meName.textContent = p ? p.display_name : 'Гость';
-    el.meTag.textContent = p ? '@' + p.username : (api.ready ? 'без аккаунта' : 'синхронизация не подключена');
+    el.meTag.textContent = p ? '@' + p.username : 'без аккаунта';
     el.meAvatar.textContent = initials(p ? p.display_name : '?');
     el.meAvatar.style.background = p ? colorFor(p.id) : 'var(--muted)';
     el.btnSignout.hidden = !signedIn;
     el.btnAccount.classList.toggle('hidden', signedIn);
     el.btnSocial.classList.toggle('hidden', !signedIn);
-    el.btnAccount.textContent = !api.ready
-      ? 'Подключить синхронизацию'
-      : (signedIn ? 'Друзья и группы' : 'Войти в аккаунт');
+    el.btnAccount.textContent = signedIn ? 'Группы' : 'Войти';
   }
 
-  function openAuth(asSetup) {
-    setup = !!asSetup;
-    mode = 'in';
-    setAuthMode('in');
+  function openAuth() {
     $('#auth-err').textContent = '';
-
-    // In setup mode the dialog only asks for the project address and key.
-    $('#setup-fields').classList.toggle('hidden', !setup);
-    for (const id of ['auth-user', 'auth-pass']) {
-      const node = $('#' + id);
-      if (node) node.classList.toggle('hidden', setup);
-    }
-    // The display-name field belongs to the sign-up tab, which setAuthMode
-    // has just set; setup mode hides it as well.
-    if (setup) $('#auth-display').classList.add('hidden');
-    const userLabel = document.querySelector('label[for="auth-user"]');
-    const passLabel = document.querySelector('label[for="auth-pass"]');
-    if (userLabel) userLabel.classList.toggle('hidden', setup);
-    if (passLabel) passLabel.classList.toggle('hidden', setup);
-
-    document.querySelector('.auth-tabs').classList.toggle('hidden', setup);
-    $('#auth-note-default').classList.toggle('hidden', setup);
-    $('#auth-note-setup').classList.toggle('hidden', !setup);
-    $('#btn-auth-go').textContent = setup ? 'Подключить' : 'Войти';
-
     $('#auth-pass').value = '';
     el.auth.classList.remove('hidden');
-    setTimeout(() => { (setup ? $('#setup-url') : $('#auth-user')).focus(); }, 40);
+    setTimeout(() => $('#auth-user').focus(), 40);
   }
 
   function closeAuth() {
     el.auth.classList.add('hidden');
-    // Leave the dialog exactly as the ordinary sign-in form for next time.
-    $('#setup-fields').classList.add('hidden');
-    for (const id of ['auth-user', 'auth-pass']) {
-      const node = $('#' + id);
-      if (node) node.classList.remove('hidden');
-    }
-    const userLabel = document.querySelector('label[for="auth-user"]');
-    const passLabel = document.querySelector('label[for="auth-pass"]');
-    if (userLabel) userLabel.classList.remove('hidden');
-    if (passLabel) passLabel.classList.remove('hidden');
-    document.querySelector('.auth-tabs').classList.remove('hidden');
-    $('#auth-note-default').classList.remove('hidden');
-    $('#auth-note-setup').classList.add('hidden');
-    setup = false;
-  }
-
-  function setAuthMode(m) {
-    mode = m;
-    document.querySelectorAll('.auth-tab').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
-    $('#btn-auth-go').textContent = m === 'in' ? 'Войти' : 'Зарегистрироваться';
-    $('#label-display').classList.toggle('hidden', m === 'in');
-    $('#auth-display').classList.toggle('hidden', m === 'in');
-    $('#auth-pass').autocomplete = m === 'in' ? 'current-password' : 'new-password';
   }
 
   async function doAuth() {
@@ -4239,37 +4465,8 @@
     const errBox = $('#auth-err');
     errBox.textContent = '';
 
-    // ── setup mode ──────────────────────────────────────────────────────────
-    if (setup) {
-      const url = ($('#setup-url').value || '').trim();
-      const key = ($('#setup-key').value || '').trim();
-
-      // Strip trailing slash before validating — pasting from a browser address
-      // bar often includes one, and the user should not have to notice.
-      const urlClean = url.replace(/\/+$/, '');
-      if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(urlClean)) {
-        errBox.textContent = 'Адрес должен выглядеть так: https://abcdefgh.supabase.co';
-        return;
-      }
-      // The new Supabase publishable key starts with "sb_publishable_" and is
-      // shorter than the old JWT anon key.  Accept anything at least 20 chars.
-      if (key.length < 20) {
-        errBox.textContent = 'Ключ скопирован не полностью.';
-        return;
-      }
-
-      api.setConfig(url, key);
-      $('#setup-key').value = '';
-      closeAuth();
-      paintMe();
-      note('Синхронизация подключена. Теперь зарегистрируйтесь.');
-      openAuth(false);
-      return;
-    }
-
     const user = $('#auth-user').value.trim();
     const pass = $('#auth-pass').value;
-    const display = $('#auth-display').value.trim();
 
     if (!/^[a-zA-Z0-9_.-]{3,24}$/.test(user)) {
       errBox.textContent = 'Имя: 3–24 символа, латиница, цифры, . _ -';
@@ -4283,12 +4480,20 @@
     busy = true;
     const btn = $('#btn-auth-go');
     const was = btn.textContent;
-    const wasSetup = setup;
     btn.textContent = 'Подождите…';
     btn.disabled = true;
     try {
-      if (mode === 'up') await api.signUp(user, pass, display || user);
-      else await api.signIn(user, pass);
+      // Try sign-in first; if the name is unknown, sign up instead.
+      try {
+        await api.signIn(user, pass);
+      } catch (e) {
+        if (e.message === 'NO_SUCH_USER') {
+          const display = ($('#auth-display') && $('#auth-display').value.trim()) || user;
+          await api.signUp(user, pass, display);
+        } else {
+          throw e;
+        }
+      }
 
       api.startPresence();
       paintMe();
@@ -4298,201 +4503,46 @@
       errBox.textContent = say(e);
     } finally {
       busy = false;
-      // closeAuth() has already put the dialog back to its normal shape, so
-      // its label is set there; only restore it when the dialog is still open.
-      if (!wasSetup || !el.auth.classList.contains('hidden')) {
-        btn.textContent = was;
-      }
+      if (!el.auth.classList.contains('hidden')) btn.textContent = was;
       btn.disabled = false;
     }
   }
 
-  // ── LISTS ─────────────────────────────────────────────────────────────────
-  function personRow(p, opts) {
-    const row = document.createElement('div');
-    row.className = 'person';
-
-    const ava = document.createElement('div');
-    ava.className = 'ava';
-    ava.textContent = initials(p.display_name);
-    ava.style.background = colorFor(p.id);
-    if (opts && opts.online !== undefined) {
-      const dot = document.createElement('i');
-      if (opts.online) dot.className = 'on';
-      ava.appendChild(dot);
-    }
-    row.appendChild(ava);
-
-    const who = document.createElement('div');
-    who.className = 'who';
-    who.textContent = p.display_name;
-    if (opts && opts.sub) {
-      const small = document.createElement('small');
-      small.textContent = opts.sub;
-      who.appendChild(small);
-    }
-    row.appendChild(who);
-
-    for (const b of (opts && opts.buttons) || []) {
-      const btn = document.createElement('button');
-      btn.className = 'act' + (b.kind ? ' ' + b.kind : '');
-      btn.type = 'button';
-      btn.textContent = b.label;
-      btn.title = b.title || b.label;
-      btn.addEventListener('click', b.onClick);
-      row.appendChild(btn);
-    }
-    return row;
-  }
-
-  async function refresh() {
-    if (!api.signedIn) {
-      el.friends.innerHTML = '';
-      el.incoming.innerHTML = '';
-      el.outgoing.innerHTML = '';
-      el.invites.innerHTML = '';
-      $('#friends-empty').hidden = false;
-      ['incoming-wrap', 'friends-wrap', 'outgoing-wrap'].forEach((id) => { $('#' + id).hidden = true; });
-      return;
-    }
-
-    let graph;
-    try {
-      graph = await api.friendGraph();
-    } catch (e) {
-      note(say(e));
-      return;
-    }
-
-    const online = await api.onlineAmong(graph.friends.map((f) => f.user.id)).catch(() => new Set());
-
-    el.incoming.innerHTML = '';
-    for (const f of graph.incoming) {
-      el.incoming.appendChild(personRow(f.user, {
-        buttons: [
-          { label: 'Принять', kind: 'call', onClick: () => guard(async () => { await api.acceptFriend(f.row); await refresh(); }) },
-          { label: '×', kind: 'no', title: 'Отклонить', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) },
-        ],
-      }));
-    }
-
-    el.friends.innerHTML = '';
-    for (const f of graph.friends) {
-      el.friends.appendChild(personRow(f.user, {
-        online: online.has(f.user.id),
-        sub: online.has(f.user.id) ? 'в сети' : undefined,
-        buttons: [
-          { label: 'Позвать', kind: 'call', title: 'Начать звонок и пригласить', onClick: () => callFriend(f.user) },
-          { label: '×', kind: 'no', title: 'Удалить из друзей', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) },
-        ],
-      }));
-    }
-
-    el.outgoing.innerHTML = '';
-    for (const f of graph.outgoing) {
-      el.outgoing.appendChild(personRow(f.user, {
-        sub: 'ждём ответа',
-        buttons: [{ label: 'Отменить', kind: 'no', onClick: () => guard(async () => { await api.removeFriend(f.row); await refresh(); }) }],
-      }));
-    }
-
-    const none = !graph.friends.length && !graph.incoming.length && !graph.outgoing.length;
-    $('#friends-empty').hidden = !none;
-    $('#incoming-wrap').hidden = !graph.incoming.length;
-    $('#friends-wrap').hidden = !graph.friends.length;
-    $('#outgoing-wrap').hidden = !graph.outgoing.length;
-
-    const badge = graph.incoming.length;
-    el.badgeFriends.hidden = !badge;
-    el.badgeFriends.textContent = badge || '';
-
-    await paintInvites();
-  }
-
-  async function paintInvites() {
-    el.invites.innerHTML = '';
-    let list;
-    try { list = await api.pendingInvites(); } catch (_) { return; }
-    for (const inv of list) {
-      const card = document.createElement('div');
-      card.className = 'invite-card';
-
-      const span = document.createElement('span');
-      span.textContent = (inv.from.display_name || 'Участник') + ' зовёт в комнату ' + inv.room;
-      card.appendChild(span);
-
-      const go = document.createElement('button');
-      go.className = 'act call';
-      go.type = 'button';
-      go.textContent = 'Войти';
-      go.addEventListener('click', () => {
-        api.dismissInvite(inv.id).catch(() => {});
-        joinCode(inv.room);
-      });
-      card.appendChild(go);
-
-      const no = document.createElement('button');
-      no.className = 'act no';
-      no.type = 'button';
-      no.textContent = '×';
-      no.title = 'Скрыть';
-      no.addEventListener('click', () => guard(async () => { await api.dismissInvite(inv.id); card.remove(); }));
-      card.appendChild(no);
-
-      el.invites.appendChild(card);
-    }
-  }
-
-  // Every button that talks to the network goes through this, so one failure
-  // is one readable message and never an unhandled rejection.
-  async function guard(fn) {
-    try { await fn(); }
-    catch (e) { note(say(e)); }
-  }
-
-  // ── CALLING ───────────────────────────────────────────────────────────────
-  function myDisplay() {
-    const p = api.profile;
-    if (p) return p.display_name;
-    return ($('#name').value || '').trim() || 'Гость';
-  }
-
-  async function callFriend(user) {
-    const code = window.__rup.createRoom(myDisplay());
-    if (!code) return;
-    // The console gets its name from the profile; announce the invitation so
-    // the other side sees it without being told the room code out of band.
-    if (api.signedIn) {
-      await guard(() => api.inviteToCall({ userId: user.id, room: code }));
-    }
-  }
-
-  function joinCode(code) {
-    if (!window.__rup.joinRoom(code, myDisplay())) return;
-  }
-
-  async function callGroup(group) {
-    const code = window.__rup.createRoom(myDisplay());
-    if (!code) return;
-    if (api.signedIn) {
-      await guard(() => api.inviteToCall({ groupId: group.id, room: code }));
-    }
-    note('Ссылка на комнату ' + code + ' отправлена группе');
-  }
-
   // ── GROUPS ────────────────────────────────────────────────────────────────
+  // paintGroups is async and can be triggered from several places at once (the
+  // refresh timer, a button, a manual refresh).  Two overlapping runs would
+  // both rebuild and both swap in, so a second call while one is in flight just
+  // asks for one more pass afterwards.
+  let painting = false;
+  let paintAgain = false;
+
   async function paintGroups() {
-    el.groupsList.innerHTML = '';
-    if (!api.signedIn) return;
+    if (painting) { paintAgain = true; return; }
+    painting = true;
+    try {
+      do { paintAgain = false; await paintGroupsOnce(); } while (paintAgain);
+    } finally {
+      painting = false;
+    }
+  }
+
+  async function paintGroupsOnce() {
+    if (!api.signedIn) { el.groupsList.replaceChildren(); return; }
 
     let groups;
     try { groups = await api.myGroups(); } catch (e) { note(say(e)); return; }
 
+    // Build into a detached fragment and swap it in at the end.  Clearing the
+    // live list first would blank it for the whole network round-trip, and the
+    // panel refreshes every few seconds.
+    const box = document.createDocumentFragment();
+
     if (!groups.length) {
       const p = document.createElement('p');
       p.className = 'social-hint';
-      p.textContent = 'Групп пока нет.';
-      el.groupsList.appendChild(p);
+      p.textContent = 'Групп пока нет. Создайте или войдите по коду.';
+      box.appendChild(p);
+      el.groupsList.replaceChildren(box);
       return;
     }
 
@@ -4514,6 +4564,14 @@
       });
       head.appendChild(codeEl);
 
+      const chatBtn = document.createElement('button');
+      chatBtn.className = 'act';
+      chatBtn.type = 'button';
+      chatBtn.textContent = 'Чат';
+      chatBtn.title = 'Открыть общий чат группы';
+      chatBtn.addEventListener('click', () => enterChat(g));
+      head.appendChild(chatBtn);
+
       const callBtn = document.createElement('button');
       callBtn.className = 'act call';
       callBtn.type = 'button';
@@ -4530,9 +4588,9 @@
         const chip = document.createElement('span');
         chip.className = 'chip';
         const b = document.createElement('b');
-        b.textContent = m.display_name;
+        b.textContent = m.display || m.display_name || '?';
         chip.appendChild(b);
-        if (m.role === 'owner') chip.appendChild(document.createTextNode(' · организатор'));
+        if (m.id && m.id === g.owner) chip.appendChild(document.createTextNode(' · организатор'));
         members.appendChild(chip);
       }
       card.appendChild(members);
@@ -4547,13 +4605,16 @@
       leave.addEventListener('click', () => guard(async () => {
         if (g.role === 'owner') await api.deleteGroup(g.id);
         else await api.leaveGroup(g.id);
+        if (openChatGid === g.id) exitChat();
         await paintGroups();
       }));
       actions.appendChild(leave);
       card.appendChild(actions);
 
-      el.groupsList.appendChild(card);
+      box.appendChild(card);
     }
+
+    el.groupsList.replaceChildren(box);
   }
 
   async function copyText(text) {
@@ -4572,52 +4633,185 @@
     }
   }
 
+  // ── GROUP CHAT ─────────────────────────────────────────────────────────────
+  async function enterChat(group) {
+    if (openChatGid === group.id) return;
+    exitChat();
+    openChatGid = group.id;
+    el.chatTitle.textContent = group.name;
+    el.chatLog.innerHTML = '';
+
+    el.panelGroups.classList.add('hidden');
+    el.panelChat.classList.remove('hidden');
+
+    await api.openChat(group.id);
+    chatStream = api.onChat((msg) => {
+      if (openChatGid !== group.id) return;
+      appendChat(msg);
+    });
+  }
+
+  function appendChat(msg) {
+    const row = document.createElement('div');
+    row.className = 'chat-msg';
+
+    const who = document.createElement('b');
+    who.textContent = (msg.name || '?') + ': ';
+    who.style.color = colorFor(msg.from);
+    row.appendChild(who);
+
+    const text = document.createElement('span');
+    text.textContent = msg.text;
+    row.appendChild(text);
+
+    el.chatLog.appendChild(row);
+    el.chatLog.scrollTop = el.chatLog.scrollHeight;
+  }
+
+  function exitChat() {
+    if (chatStream) { chatStream(); chatStream = null; }
+    api.closeChat();
+    openChatGid = null;
+    el.panelChat.classList.add('hidden');
+    el.panelGroups.classList.remove('hidden');
+  }
+
+  // ── CALLING ───────────────────────────────────────────────────────────────
+  function myDisplay() {
+    const p = api.profile;
+    if (p) return p.display_name;
+    return ($('#name').value || '').trim() || 'Гость';
+  }
+
+  async function callGroup(group) {
+    closeSocial();
+    const code = window.__rup.createRoom(myDisplay());
+    if (!code) return;
+    await guard(() => api.inviteToCall({ groupId: group.id, room: code }));
+    note('Комната ' + code + ' создана, группа оповещена');
+  }
+
+  function joinCode(code) {
+    closeSocial();
+    if (!window.__rup.joinRoom(code, myDisplay())) return false;
+    return true;
+  }
+
+  // ── INCOMING CALLS ────────────────────────────────────────────────────────
+  // An invitation is written to a retained topic under the invitee's id, so it
+  // survives the inviter closing their laptop.  The panel polls while it is
+  // open and offers a single button that joins the room.
+  let paintingInvites = false;
+
+  async function paintInvites() {
+    if (!api.signedIn || !el.invites) return;
+    if (paintingInvites) return;
+    paintingInvites = true;
+    try { await paintInvitesOnce(); } finally { paintingInvites = false; }
+  }
+
+  async function paintInvitesOnce() {
+    let list;
+    try { list = await api.pendingInvites(); } catch (_) { return; }
+
+    // Same reasoning as the group list: build, then swap.
+    const box = document.createDocumentFragment();
+
+    if (!list || !list.length) {
+      if (el.invitesWrap) el.invitesWrap.classList.add('hidden');
+      el.invites.replaceChildren();
+      return;
+    }
+
+    if (el.invitesWrap) el.invitesWrap.classList.remove('hidden');
+    for (const inv of list) {
+      const row = document.createElement('div');
+      row.className = 'invite-row';
+
+      const who = document.createElement('b');
+      who.textContent = inv.name || 'Кто-то';
+      row.appendChild(who);
+
+      const code = document.createElement('span');
+      code.className = 'group-code';
+      code.textContent = inv.room;
+      row.appendChild(code);
+
+      const go = document.createElement('button');
+      go.className = 'side-btn';
+      go.type = 'button';
+      go.textContent = 'Присоединиться';
+      go.addEventListener('click', () => guard(async () => {
+        await api.dismissInvite(inv.id);
+        joinCode(inv.room);
+        await paintInvites();
+      }));
+      row.appendChild(go);
+
+      const no = document.createElement('button');
+      no.className = 'me-out';
+      no.type = 'button';
+      no.title = 'Отклонить';
+      no.textContent = '×';
+      no.addEventListener('click', () => guard(async () => {
+        await api.dismissInvite(inv.id);
+        await paintInvites();
+      }));
+      row.appendChild(no);
+
+      box.appendChild(row);
+    }
+
+    el.invites.replaceChildren(box);
+  }
+
   // ── VIEWS ─────────────────────────────────────────────────────────────────
   function openSocial() {
     el.home.classList.add('hidden');
     el.social.classList.remove('hidden');
     paintMe();
-    setView('friends');
-    refresh();
+    showGroups();
     if (api.signedIn) api.startPresence();
-    // Polling keeps the list honest without a live connection to the database.
+    paintInvites();
     if (!openSocial.timer) {
       openSocial.timer = setInterval(() => {
-        if (!el.social.classList.contains('hidden')) refresh();
+        if (el.social.classList.contains('hidden')) return;
+        paintInvites();
+        if (!openChatGid) paintGroups();
       }, 8000);
     }
   }
 
   function closeSocial() {
+    exitChat();
     el.social.classList.add('hidden');
     el.home.classList.remove('hidden');
   }
 
-  function setView(v) {
-    view = v;
-    el.friendTab.classList.toggle('on', v === 'friends');
-    el.groupTab.classList.toggle('on', v === 'groups');
-    el.panelFriends.classList.toggle('hidden', v !== 'friends');
-    el.panelGroups.classList.toggle('hidden', v !== 'groups');
-    $('#side-friends').classList.toggle('hidden', v !== 'friends');
-    $('#side-groups').classList.toggle('hidden', v !== 'groups');
-    el.mainTitle.textContent = v === 'friends' ? 'Друзья' : 'Группы';
-    if (v === 'groups') paintGroups();
+  function showGroups() {
+    el.panelChat.classList.add('hidden');
+    el.panelGroups.classList.remove('hidden');
+    if (el.sideCalls) el.sideCalls.classList.add('hidden');
+    if (el.sideGroups) el.sideGroups.classList.remove('hidden');
+    if (el.groupTab) el.groupTab.classList.add('on');
+    el.mainTitle.textContent = 'Группы';
+    paintGroups();
+  }
+
+  async function guard(fn) {
+    try { await fn(); }
+    catch (e) { note(say(e)); }
   }
 
   // ── WIRING ────────────────────────────────────────────────────────────────
-  document.querySelectorAll('.auth-tab').forEach((b) => {
-    b.addEventListener('click', () => setAuthMode(b.dataset.mode));
-  });
   $('#btn-auth-go').addEventListener('click', doAuth);
-  $('#btn-auth-cancel').addEventListener('click', closeAuth);
-  $('#auth-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAuth(); });
-  $('#auth-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#auth-pass').focus(); });
+  if ($('#btn-auth-cancel')) $('#btn-auth-cancel').addEventListener('click', closeAuth);
+  if ($('#auth-pass')) $('#auth-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAuth(); });
+  if ($('#auth-user')) $('#auth-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#auth-pass').focus(); });
 
   el.btnAccount.addEventListener('click', () => {
     if (api.signedIn) openSocial();
-    else if (!api.ready) openAuth(true);   // ask for the project address and key
-    else openAuth(false);
+    else openAuth();
   });
 
   el.btnSocial.addEventListener('click', openSocial);
@@ -4626,24 +4820,28 @@
     guard(async () => {
       api.stopPresence();
       await api.signOut();
+      // Nothing from the previous account may stay on screen: the group list
+      // and any pending invitations belong to whoever was signed in before.
+      exitChat();
+      el.groupsList.replaceChildren();
+      el.invites.replaceChildren();
+      if (el.invitesWrap) el.invitesWrap.classList.add('hidden');
       paintMe();
     });
   });
 
-  el.friendTab.addEventListener('click', () => setView('friends'));
-  el.groupTab.addEventListener('click', () => setView('groups'));
+  if (el.groupTab) el.groupTab.addEventListener('click', showGroups);
+  if (el.chatBack) el.chatBack.addEventListener('click', exitChat);
 
-  el.btnAddFriend.addEventListener('click', () => {
-    const name = el.inputFriend.value.trim();
-    if (!name) return;
-    guard(async () => {
-      const r = await api.addFriend(name);
-      el.inputFriend.value = '';
-      note(r.accepted ? 'Заявка принята — теперь вы друзья' : 'Заявка отправлена');
-      await refresh();
-    });
+  el.chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = el.chatInput.value.trim();
+    if (!text) return;
+    if (api.sendChat(text)) {
+      el.chatInput.value = '';
+      el.chatInput.focus();
+    }
   });
-  el.inputFriend.addEventListener('keydown', (e) => { if (e.key === 'Enter') el.btnAddFriend.click(); });
 
   $('#btn-create-group').addEventListener('click', () => {
     const name = ($('#group-name').value || '').trim();
@@ -4667,28 +4865,26 @@
     });
   });
 
-  $('#btn-new-room').addEventListener('click', () => {
-    const code = window.__rup.createRoom(myDisplay());
-    if (code) note('Комната ' + code + ' создана');
-  });
-
-  // ── START ─────────────────────────────────────────────────────────────────
-  // A stored session is restored quietly; a missing or expired one simply
-  // leaves the app in its old, account-less mode.
-  paintMe();
-  if (api.ready) {
-    api.restore().then((p) => {
-      paintMe();
-      if (p) api.startPresence();
-    }).catch(() => {});
+  if ($('#btn-new-room')) {
+    $('#btn-new-room').addEventListener('click', () => {
+      closeSocial();
+      const code = window.__rup.createRoom(myDisplay());
+      if (code) note('Комната ' + code + ' создана');
+    });
   }
 
-  // Exposed for the tests and for the console.
+  // ── START ─────────────────────────────────────────────────────────────────
+  paintMe();
+  api.restore().then((p) => {
+    paintMe();
+    if (p) api.startPresence();
+  }).catch(() => {});
+
   window.__social = {
     open: openSocial,
     close: closeSocial,
-    refresh,
-    view: setView,
+    refresh: async () => { await paintInvites(); await paintGroups(); },
+    chat: enterChat,
     get ready() { return api.ready; },
     get signedIn() { return api.signedIn; },
   };
