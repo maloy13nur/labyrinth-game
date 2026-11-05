@@ -1540,9 +1540,11 @@
     { urls: 'turn:openrelay.metered.ca:443',  username: 'openrelayproject', credential: 'openrelayproject' },
     { urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
     { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turns:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   ];
 
-  const ICE_CAP = 1500;
+  const ICE_CAP = 4000;
   const RETRY = [0, 1500, 3500, 6000, 9000];
 
   // The first offer goes out before the other side may have subscribed, so it
@@ -2071,14 +2073,29 @@
     get peerConnection() { return this.pc; }
     answer(stream) { this.localStream = stream; this._start(); }
     _start() {
-      if (this._started || !this.localStream || !this.remoteSdp || !this.pc) return;
+      if (!this.localStream || !this.remoteSdp || !this.pc) return;
+      if (this._started) {
+        // Already negotiated. Only a recovery offer may re-enter here, and
+        // only while ICE is actually unhealthy — otherwise a stale repeat
+        // would tear down a working call.
+        const st = this.pc.iceConnectionState;
+        if (st !== 'disconnected' && st !== 'failed') return;
+        if (this.pc.signalingState !== 'stable') return;
+      }
       this._started = true;
       const pc = this.pc;
       const stream = this.localStream;
       (async () => {
         try {
           await pc.setRemoteDescription({ type: 'offer', sdp: this.remoteSdp });
-          for (const t of stream.getTracks()) { try { pc.addTrack(t, stream); } catch (_) {} }
+          // addTrack throws on a re-offer: the transceivers already exist.
+          // replaceTrack keeps the existing senders carrying the same sources.
+          const senders = pc.getSenders();
+          for (const t of stream.getTracks()) {
+            const sender = senders.find((s) => s.track && s.track.kind === t.kind);
+            if (sender) { try { await sender.replaceTrack(t); } catch (_) {} }
+            else { try { pc.addTrack(t, stream); } catch (_) {} }
+          }
           const ans = await pc.createAnswer();
           await pc.setLocalDescription(ans);
           await waitIce(pc, ICE_CAP);
@@ -2228,6 +2245,7 @@
     _dial(target, stream) {
       target.sid = hex(6);
       target.pc = this._newPc();
+      target._isDialer = true;
       this._all.add(target);
       this._bySid.set(target.sid, target);
       this._out.set(target.peer + '|' + target.kind, target);
@@ -2239,6 +2257,29 @@
       } else {
         this._wireTracks(target);
         for (const t of stream.getTracks()) { try { pc.addTrack(t, stream); } catch (_) {} }
+        // An ICE restart re-gathers candidates and asks for renegotiation.
+        // The initial offer is sent before this handler can fire, so the
+        // first firing is the one we already handled in the block below.
+        pc.onnegotiationneeded = () => {
+          if (target.closed || this.destroyed) return;
+          if (!pc.currentRemoteDescription) return;  // initial exchange not complete yet
+          if (pc.signalingState !== 'stable') return;
+          (async () => {
+            try {
+              const offer = await pc.createOffer({ iceRestart: true });
+              await pc.setLocalDescription(offer);
+              await waitIce(pc, ICE_CAP);
+              if (target.closed || this.destroyed) return;
+              // A fresh sid makes the remote side treat this as a new offer
+              // rather than replaying the previous answer.
+              const oldSid = target.sid;
+              target.sid = hex(6);
+              this._bySid.delete(oldSid);
+              this._bySid.set(target.sid, target);
+              this._offer(target);
+            } catch (_) {}
+          })();
+        };
       }
 
       (async () => {
@@ -2391,6 +2432,23 @@
         if (mc.closed || this.destroyed) return;
         this._redialMedia(mc);
       };
+      mc.pc.oniceconnectionstatechange = () => {
+        if (mc.pc.iceConnectionState !== 'disconnected') return;
+        if (mc.closed || this.destroyed) return;
+        const pc = mc.pc;
+        setTimeout(() => {
+          if (mc.closed || this.destroyed) return;
+          if (pc.iceConnectionState !== 'disconnected') return;
+          if (pc.signalingState !== 'stable') return;
+          // Caller: restartIce() triggers onnegotiationneeded → new offer sent.
+          // Answerer: restartIce() has no offer path; fall back to full redial.
+          if (mc._isDialer) {
+            try { pc.restartIce(); } catch (_) {}
+          } else {
+            this._redialMedia(mc);
+          }
+        }, 2000);
+      };
     }
 
     _redialMedia(old) {
@@ -2443,6 +2501,9 @@
     mqttReadEach,
     ROOT: 'rupor/v3',
     hex,
+    // Diagnostic values for integration tests
+    ICE_CAP,
+    ICE_SERVERS: ICE,
   };
 })(window);
 </script>
@@ -3459,12 +3520,14 @@
 
     stopMic(); stopCam(); stopShare();
     teardownMix();
+    if (mixCtx) { try { mixCtx.close(); } catch (_) {} mixCtx = null; silentTrack = null; }
 
     cleanupPeer();
 
     if (localTile) { localTile.remove(); localTile = null; localVideo = null; localAvatar = null; }
     closeZoom();
     stopVoiceWatch();
+    if (voiceCtx) { try { voiceCtx.close(); } catch (_) {} voiceCtx = null; voiceAnalyser = null; voiceBuf = null; }
     $('#grid').innerHTML = '';
     $('#chat-log').innerHTML = '';
     $('#room').classList.add('hidden');
@@ -3954,6 +4017,20 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  // ── EVENTS ────────────────────────────────────────────────────────────────
+  // A minimal emitter so the panel can react to account and group changes
+  // instead of polling.  No wildcard events, no async: a throwing listener must
+  // never break the caller, so each one is isolated.
+  const _listeners = {};
+
+  function emit(event, data) {
+    const fns = _listeners[event];
+    if (!fns || !fns.length) return;
+    for (const fn of fns.slice()) {
+      try { fn(data); } catch (_) {}
+    }
+  }
+
   // ── GROUP CRYPTO ──────────────────────────────────────────────────────────
   // The invite code is the group's shared secret: it travels out of band
   // (copied by hand, sent over another channel) and never through MQTT.
@@ -4080,6 +4157,7 @@
     const s = { id, username: name.toLowerCase(), display };
     saveSession(s);
     profile = { id, username: name.toLowerCase(), display_name: display };
+    emit('signedIn', profile);
     return profile;
   }
 
@@ -4099,6 +4177,7 @@
     const s = { id, username: name.toLowerCase(), display };
     saveSession(s);
     profile = { id, username: name.toLowerCase(), display_name: display };
+    emit('signedIn', profile);
     return profile;
   }
 
@@ -4107,12 +4186,32 @@
     return profile || null;
   }
 
+  // Renaming yourself is purely local until the next group write picks the new
+  // name up: published member entries keep the display name they were written
+  // with, because rewriting every group's member list from here would mean
+  // racing the owner's other writes for no real gain.
+  function changeDisplayName(newName) {
+    if (!profile) return false;
+    const trimmed = String(newName || '').trim().slice(0, 32);
+    if (!trimmed) return false;
+
+    try { global.localStorage.setItem(dnKey(profile.username), trimmed); } catch (_) {}
+    profile.display_name = trimmed;
+    if (session) {
+      session.display = trimmed;
+      saveSession(session);
+    }
+    emit('profileChanged', profile);
+    return true;
+  }
+
   function signOut() {
     unsubscribeInvites();
     stopPresence();
     if (profile) drop(ROOT + '/p/' + profile.id);
     saveSession(null);
     profile = null;
+    emit('signedOut');
     return Promise.resolve();
   }
 
@@ -4417,6 +4516,7 @@
       if (!plain.invite && local && local.invite) plain.invite = local.invite;
       cacheGroup(plain);
       for (const fn of groupListeners) { try { fn(plain); } catch (_) {} }
+      emit('groupsChanged', myGroupsCached());
     });
   }
 
@@ -4445,7 +4545,20 @@
     ids.add(id);
     saveMyGroupIds(ids);
     syncGroupSubs();
+    emit('groupsChanged', myGroupsCached());
     return id;
+  }
+
+  // Member entries are objects, so a set on ids is what dedupe actually means.
+  function mergeMembers(...lists) {
+    const out = [];
+    for (const list of lists) {
+      for (const m of (list || [])) {
+        if (!m || !m.id) continue;
+        if (!out.some((x) => x.id === m.id)) out.push(m);
+      }
+    }
+    return out;
   }
 
   async function joinGroup(code) {
@@ -4467,34 +4580,101 @@
     g.invite = clean;
     cacheGroup(g);
 
-    // Add ourselves if not already a member.
-    const members = (g.members || []).filter((m) => m.id !== profile.id);
-    members.push({ id: profile.id, display: profile.display_name });
-    await writeGroup({ ...g, members });
+    const members = mergeMembers(g.members, [{ id: profile.id, display: profile.display_name }]);
+    let rec = await writeGroup({ ...g, members });
+
+    // Two people joining at the same time both read the same rev and publish
+    // it, and the loser silently vanishes from the member list.  So after the
+    // write we look at what the brokers actually ended up with and, if our id
+    // is missing, publish again on top of the fresh revision — merging in
+    // whoever arrived meanwhile rather than dropping them.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await sleep(1200);
+      const raw = await readGroup(groupTopic(rec.id), 6000);
+      const fresh = raw ? await decryptGroup(raw, clean) : null;
+      if (!fresh) break;
+      fresh.invite = clean;
+      cacheGroup(fresh);
+      const list = Array.isArray(fresh.members) ? fresh.members : [];
+      if (list.some((m) => m && m.id === profile.id)) { rec = fresh; break; }
+      const merged = mergeMembers(list, [{ id: profile.id, display: profile.display_name }]);
+      rec = await writeGroup({ ...fresh, members: merged });
+    }
 
     const ids = myGroupIdSet();
     ids.add(g.id);
     saveMyGroupIds(ids);
     syncGroupSubs();
+    emit('groupsChanged', myGroupsCached());
     return g.id;
   }
 
   async function leaveGroup(gid) {
     if (!profile) throw new Error('SIGNIN_FAILED');
-    const g = await groupRecord(gid, 7000);
+    if (!gid) throw new Error('GROUP_NOT_FOUND');
+    // Read fresh from network only — ignore local cache so we don't clobber
+    // a concurrent joinGroup that bumped the revision after our last sync.
+    const rawNet = await readGroup(groupTopic(gid), 7000);
+    const local  = cachedGroup(gid);
+    const code   = local && local.invite;
+    const plain  = rawNet ? await decryptGroup(rawNet, code) : null;
+    const g      = plain || local;
     if (g) {
+      if (!plain && local) plain && Object.assign(g, {}); // keep local if net silent
       if (g.owner === profile.id) throw new Error('OWNER_CANNOT_LEAVE');
+      if (plain && local && local.invite) plain.invite = local.invite;
       const members = (g.members || []).filter((m) => m.id !== profile.id);
-      await writeGroup({ ...g, members });
+      let rec = await writeGroup({ ...g, members });
+      // Verify that the removal stuck — a concurrent join may have published a
+      // higher rev in between, re-adding us.  Retry up to 2 times.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await sleep(800);
+        const fresh = await readGroup(groupTopic(gid), 5000);
+        const fp = fresh ? await decryptGroup(fresh, code) : null;
+        if (!fp) break;
+        const list = Array.isArray(fp.members) ? fp.members : [];
+        if (!list.some((m) => m && m.id === profile.id)) break; // removal confirmed
+        // We're still in the list — overwrite again
+        fp.invite = code;
+        const without = list.filter((m) => m.id !== profile.id);
+        rec = await writeGroup({ ...fp, members: without });
+      }
     }
     const ids = myGroupIdSet();
     ids.delete(gid);
     saveMyGroupIds(ids);
+    // The chat history is keyed by group id and would otherwise linger on a
+    // device that is no longer a member — the retained messages on the broker
+    // are gone from this device's reach anyway.
+    clearChatHistory(gid);
+    emit('groupsChanged', myGroupsCached());
+    return true;
+  }
+
+  // Only the owner may rewrite the published name.  Everything else in the
+  // record is preserved; the write goes through writeGroup() so the name is
+  // encrypted, the revision bumped and the signature recomputed exactly as on
+  // creation.
+  async function renameGroup(gid, newName) {
+    if (!profile) throw new Error('SIGNIN_FAILED');
+    if (!gid) return false;
+    const clean = String(newName || '').trim().slice(0, 60);
+    if (!clean) return false;
+
+    const g = await groupRecord(gid, 7000);
+    if (!g) throw new Error('GROUP_NOT_FOUND');
+    if (g.owner !== profile.id) return false;
+    if (!g.invite) return false; // cannot re-sign without the code
+
+    const rec = await writeGroup({ ...g, name: clean });
+    cacheGroup(rec);
+    emit('groupsChanged', myGroupsCached());
     return true;
   }
 
   async function deleteGroup(gid) {
     if (!profile) throw new Error('SIGNIN_FAILED');
+    if (!gid) throw new Error('GROUP_NOT_FOUND');
     const g = await groupRecord(gid, 5000);
     if (!g) throw new Error('GROUP_NOT_FOUND');
     if (g.owner !== profile.id) throw new Error('NOT_OWNER');
@@ -4514,10 +4694,12 @@
       await sleep(500);
     }
     forgetGroup(gid);
+    clearChatHistory(gid);
 
     const ids = myGroupIdSet();
     ids.delete(gid);
     saveMyGroupIds(ids);
+    emit('groupsChanged', myGroupsCached());
     return true;
   }
 
@@ -4526,8 +4708,73 @@
   let chatGid = null;
   let chatKey = null;      // CryptoKey derived from the group invite code
   let chatSeen = new Map();   // seq → decrypted message (the whole visible log)
+  let chatHist = [];          // rows loaded from localStorage for the open group
   let chatQueue = [];         // raw payloads that arrived before the key was ready
   let chatSubs = [];
+
+  // ── CHAT HISTORY ──────────────────────────────────────────────────────────
+  // The retained topics on the broker only keep the last few messages per
+  // group and are wiped along with the group, so the visible log is mirrored
+  // locally.  It is plaintext in localStorage — the same device already holds
+  // the decrypted messages in memory, and the browser profile is the trust
+  // boundary for accounts too.
+  const CHAT_HISTORY_MAX = 200;
+  const chatHistKey = (gid) => 'rup_chat_' + gid;
+
+  function loadChatHistory(gid) {
+    if (!gid) return [];
+    try {
+      const raw = global.localStorage.getItem(chatHistKey(gid));
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+
+  function saveToHistory(gid, msg) {
+    if (!gid || !msg || typeof msg.text !== 'string') return false;
+    try {
+      const hist = loadChatHistory(gid);
+      const seq = String(msg.seq == null ? '' : msg.seq);
+      const dup = hist.some((m) => String(m && m.seq) === seq);
+      if (!dup) {
+        hist.push({
+          seq,
+          from: msg.from,
+          display: msg.name || msg.display || '',
+          text: msg.text,
+          at: Number(msg.at) || Date.now(),
+        });
+      }
+      const trimmed = hist.length > CHAT_HISTORY_MAX ? hist.slice(-CHAT_HISTORY_MAX) : hist;
+      global.localStorage.setItem(chatHistKey(gid), JSON.stringify(trimmed));
+      return !dup;
+    } catch (_) { return false; }
+  }
+
+  function clearChatHistory(gid) {
+    if (!gid) return false;
+    try { global.localStorage.removeItem(chatHistKey(gid)); } catch (_) {}
+    return true;
+  }
+
+  // History rows use a display field; the chat log speaks in { from, name }.
+  function historyToMessage(row) {
+    return {
+      seq: row.seq,
+      from: row.from,
+      name: row.display || row.name || '',
+      text: row.text,
+      at: row.at,
+    };
+  }
+
+  // Keep the in-memory log in step with storage: same dedupe by seq, same cap,
+  // so replaying it never shows a message twice.
+  function appendHist(row) {
+    const key = String(row.seq);
+    if (!chatHist.some((m) => String(m.seq) === key)) chatHist.push(row);
+    if (chatHist.length > CHAT_HISTORY_MAX) chatHist = chatHist.slice(-CHAT_HISTORY_MAX);
+  }
 
   async function openChat(gid) {
     if (chatGid === gid) return;
@@ -4536,7 +4783,13 @@
     chatSeen = new Map();
     chatQueue = [];
     chatKey = null;
+    chatHist = [];
     if (!gid) return;
+
+    // Paint the local log straight away; the broker copy only adds to it.
+    // chatHist is kept apart from chatSeen so that pruning old broker topics
+    // (CHAT_KEEP) never throws away messages the user already had.
+    chatHist = loadChatHistory(gid);
 
     wireChatListener();
 
@@ -4571,6 +4824,7 @@
     chatGid = null;
     chatKey = null;
     chatSeen = new Map();
+    chatHist = [];
     chatQueue = [];
   }
 
@@ -4580,7 +4834,10 @@
     const prefix = ROOT + '/c/' + chatGid + '/';
     if (!topic.startsWith(prefix)) return null;
     if (!value || !value.p) return null;
-    const seq = Number(topic.slice(prefix.length));
+    // The seq suffix is an opaque, collision-free token (timestamp + random),
+    // not a number: two messages sent in the same millisecond must not share
+    // a topic and overwrite each other.
+    const seq = topic.slice(prefix.length);
     if (!seq) return null;
     if (chatSeen.has(seq)) return null;
 
@@ -4598,8 +4855,16 @@
     }
     if (!msg) return null;
 
+    if (msg.seq == null) msg.seq = seq;
     chatSeen.set(seq, msg);
-    for (const fn of chatListeners) { try { fn(msg); } catch (_) {} }
+    const row = { seq, from: msg.from, display: msg.name || '', text: msg.text, at: Number(msg.at) || Date.now() };
+    // isNew is false when the echo of our own sendChat() arrives from the
+    // broker — the history already has it and the panel painted it already.
+    const isNew = saveToHistory(chatGid, msg);
+    appendHist(row);
+    if (isNew !== false) {
+      for (const fn of chatListeners) { try { fn(msg); } catch (_) {} }
+    }
     return msg;
   }
 
@@ -4607,11 +4872,18 @@
 
   function onChat(fn) {
     chatListeners.add(fn);
-    // Replay anything already decrypted: a retained message may have arrived
-    // before the caller registered (the panel opens the chat and subscribes in
-    // a separate step).
-    const sorted = Array.from(chatSeen.values());
-    for (const msg of sorted) { try { fn(msg); } catch (_) {} }
+    // Replay the stored log first, then whatever the broker delivered while
+    // the panel was opening.  Both sides are de-duplicated by seq, so a
+    // retained message that is also in the history is emitted once.
+    const histRows = chatHist.length ? chatHist.slice() : loadChatHistory(chatGid);
+    const histSeqs = new Set(histRows.map((m) => String(m.seq)));
+    for (const row of histRows) {
+      try { fn(historyToMessage(row)); } catch (_) {}
+    }
+    for (const msg of chatSeen.values()) {
+      if (histSeqs.has(String(msg.seq))) continue;
+      try { fn(msg); } catch (_) {}
+    }
     return () => chatListeners.delete(fn);
   }
 
@@ -4638,8 +4910,8 @@
     if (!profile || !chatGid) return false;
     const clean = String(text || '').trim().slice(0, 500);
     if (!clean) return false;
-    const seq = Date.now();
-    const msg = { from: profile.id, name: profile.display_name, text: clean, at: seq };
+    const seq = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const msg = { from: profile.id, name: profile.display_name, text: clean, at: Date.now() };
 
     let payload;
     if (chatKey) {
@@ -4653,8 +4925,20 @@
     // still in flight would make the log lie about what other people see.
     const ok = await put(chatTopic(chatGid, seq), payload);
 
-    const seqs = Array.from(chatSeen.keys()).sort((a, b) => a - b);
-    for (const old of seqs.slice(0, Math.max(0, seqs.length - CHAT_KEEP + 1))) {
+    // Record our own message locally too: the retained echo may take a moment
+    // (or never arrive on a flaky link), and the sender's history must match
+    // what the panel has already painted.  saveToHistory() dedupes by seq, so
+    // the echo is harmless when it does come back.
+    if (ok !== false) {
+      msg.seq = seq;
+      chatSeen.set(seq, msg);
+      appendHist({ seq, from: msg.from, display: msg.name, text: msg.text, at: msg.at });
+      saveToHistory(chatGid, msg);
+    }
+
+    const seqs = Array.from(chatSeen.entries())
+      .sort((a, b) => (Number(a[1] && a[1].at) || 0) - (Number(b[1] && b[1].at) || 0));
+    for (const [old] of seqs.slice(0, Math.max(0, seqs.length - CHAT_KEEP + 1))) {
       if (old === seq) continue;
       drop(chatTopic(chatGid, old));
       chatSeen.delete(old);
@@ -4820,13 +5104,33 @@
     get signedIn() { return !!profile && !!session; },
     get profile() { return profile; },
     get userId() { return profile ? profile.id : null; },
-    on() { return api; },
+
+    // Minimal emitter.  'signedIn', 'signedOut', 'profileChanged' and
+    // 'groupsChanged' are the events this layer raises.
+    on(event, fn) {
+      if (typeof fn !== 'function') return api;
+      const name = String(event || '');
+      if (!name) return api;
+      if (!_listeners[name]) _listeners[name] = [];
+      if (!_listeners[name].includes(fn)) _listeners[name].push(fn);
+      return api;
+    },
+    off(event, fn) {
+      const fns = _listeners[String(event || '')];
+      if (fns) {
+        if (typeof fn === 'function') _listeners[String(event)] = fns.filter((f) => f !== fn);
+        else delete _listeners[String(event)];
+      }
+      return api;
+    },
+
     config: () => ({ url: 'mqtt://relay', key: 'none' }),
     setConfig() { return true; },
     restore,
     signUp,
     signIn,
     signOut,
+    changeDisplayName,
     myGroups,
     myGroupsCached,
     onGroups,
@@ -4834,6 +5138,7 @@
     joinGroup,
     leaveGroup,
     deleteGroup,
+    renameGroup,
     startPresence,
     stopPresence,
     inviteToCall,
@@ -4846,6 +5151,8 @@
     closeChat,
     onChat,
     sendChat,
+    loadChatHistory,
+    clearChatHistory,
   };
 
   global.Rupor = global.Rupor || {};
@@ -4920,6 +5227,9 @@
   let busy = false;
   let openChatGid = null;
   let chatStream = null;
+  let _presenceTimer = null;
+  let _presenceMap = Object.create(null);
+  let _lastGroups = [];
 
   // ── SMALL HELPERS ─────────────────────────────────────────────────────────
   function initials(name) {
@@ -5063,6 +5373,7 @@
   }
 
   function renderGroups(groups) {
+    _lastGroups = groups || [];
     const box = document.createDocumentFragment();
 
     if (!groups.length) {
@@ -5115,6 +5426,13 @@
       for (const m of g.members) {
         const chip = document.createElement('span');
         chip.className = 'chip';
+        if (m.id) {
+          const dot = document.createElement('span');
+          dot.className = 'presence-dot' + (_presenceMap[m.id] ? ' online' : '');
+          dot.dataset.uid = m.id;
+          dot.title = _presenceMap[m.id] ? 'В сети' : 'Не в сети';
+          chip.appendChild(dot);
+        }
         const b = document.createElement('b');
         b.textContent = m.display || m.display_name || '?';
         chip.appendChild(b);
@@ -5162,6 +5480,24 @@
   }
 
   // ── GROUP CHAT ─────────────────────────────────────────────────────────────
+  function loadChatHistory(gid) {
+    if (!api.loadChatHistory) return;
+    const history = api.loadChatHistory(gid);
+    if (!history || !history.length) return;
+    // Only populate when log is still empty (avoid re-painting live messages).
+    if (el.chatLog.children.length) return;
+    for (const msg of history) {
+      appendChat({
+        seq: msg.seq || null,
+        at:  msg.at  || null,
+        from: msg.from || '',
+        name: msg.display || msg.name || '?',
+        text: msg.text || '',
+      });
+    }
+    el.chatLog.scrollTop = el.chatLog.scrollHeight;
+  }
+
   async function enterChat(group) {
     if (openChatGid === group.id) return;
     exitChat();
@@ -5172,6 +5508,9 @@
     el.panelGroups.classList.add('hidden');
     el.panelChat.classList.remove('hidden');
 
+    // Show cached history instantly before the network round-trip.
+    loadChatHistory(group.id);
+
     await api.openChat(group.id);
     chatStream = api.onChat((msg) => {
       if (openChatGid !== group.id) return;
@@ -5179,16 +5518,33 @@
     });
   }
 
+  function _attrVal(v) {
+    return String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
   function appendChat(msg) {
+    const body = String(msg.text || '');
     // Our own message is painted the moment it is typed; when the retained
     // copy comes back from the broker it must not appear a second time.
-    if (msg.from === api.userId) {
-      const last = el.chatLog.lastElementChild;
-      if (last && last.dataset && last.dataset.text === String(msg.text)) return;
+    const key = msg.seq != null
+      ? String(msg.seq)
+      : msg.at != null
+        ? String(msg.at)
+        : (msg.from || '') + '|' + body;
+
+    if (el.chatLog.querySelector('[data-msgid="' + _attrVal(key) + '"]')) return;
+
+    if (msg.at != null && msg.from === api.userId) {
+      const echo = el.chatLog.querySelector(
+        '[data-msgid="' + _attrVal((msg.from || '') + '|' + body) + '"]'
+      );
+      if (echo) { echo.dataset.msgid = key; return; }
     }
+
     const row = document.createElement('div');
     row.className = 'chat-msg';
-    if (api.userId) row.dataset.text = String(msg.text);
+    row.dataset.msgid = key;
+    if (api.userId) row.dataset.text = body;
 
     const who = document.createElement('b');
     who.textContent = (msg.name || '?') + ': ';
@@ -5212,44 +5568,79 @@
   }
 
   // ── RINGTONE ──────────────────────────────────────────────────────────────
-  // Synthesised Discord-style ring: two alternating tones (A4 / B4) in 400 ms
-  // bursts with 200 ms gaps, repeating until stopped.
+  // Discord-style ring: ascending 3-note motif (D5→G5→B5) for incoming,
+  // soft repeating tone for outgoing.  Handles suspended AudioContext with a
+  // one-time user-interaction fallback notification.
   class RingTone {
     constructor(outgoing = false) {
       this._ctx = null;
       this._timer = null;
-      this._outgoing = outgoing; // outgoing = single low tone repeating
+      this._outgoing = outgoing;
+      this._stopped = false;
+      this._audioWarnShown = false;
     }
+
     start() {
       if (this._ctx) return;
-      try { this._ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
-      let phase = 0;
+      this._stopped = false;
+      try {
+        this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (_) { return; }
+
+      if (this._ctx.state === 'suspended') {
+        this._ctx.resume().catch(() => {});
+        // Notify user and wire a one-time click handler to unlock audio
+        if (!this._audioWarnShown) {
+          this._audioWarnShown = true;
+          note('Звук заблокирован браузером. Нажмите в любое место страницы для включения звука.');
+          const unlock = () => {
+            if (this._ctx) this._ctx.resume().catch(() => {});
+            document.removeEventListener('click', unlock);
+          };
+          document.addEventListener('click', unlock, { once: true });
+        }
+      }
+
       const play = () => {
+        if (this._stopped || !this._ctx) return;
         const ctx = this._ctx;
-        if (!ctx) return;
-        // Discord ring: two rising tones in quick succession
-        const freqs = this._outgoing ? [480] : [523, 659]; // C5 / E5 for incoming
-        freqs.forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          const t = ctx.currentTime + i * 0.18;
-          gain.gain.setValueAtTime(0, t);
-          gain.gain.linearRampToValueAtTime(0.18, t + 0.03);
-          gain.gain.setValueAtTime(0.18, t + 0.13);
-          gain.gain.linearRampToValueAtTime(0, t + 0.18);
-          osc.start(t);
-          osc.stop(t + 0.22);
-        });
-        phase++;
+        const now = ctx.currentTime;
+
+        if (this._outgoing) {
+          // Outgoing: soft repeating single tone
+          this._playNote(ctx, 440, now,       0.3, 0.12);
+          this._playNote(ctx, 440, now + 0.4, 0.3, 0.12);
+        } else {
+          // Incoming Discord-style: ascending 3-note motif
+          this._playNote(ctx, 587.33, now,        0.15, 0.10); // D5
+          this._playNote(ctx, 783.99, now + 0.17, 0.15, 0.10); // G5
+          this._playNote(ctx, 987.77, now + 0.34, 0.20, 0.12); // B5
+        }
       };
+
       play();
-      this._timer = setInterval(play, this._outgoing ? 1800 : 1600);
+      this._timer = setInterval(play, this._outgoing ? 2500 : 2000);
     }
+
+    _playNote(ctx, freq, startTime, duration, volume) {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+        gain.gain.setValueAtTime(volume, startTime + duration - 0.03);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.01);
+      } catch (_) {}
+    }
+
     stop() {
+      this._stopped = true;
       if (this._timer) { clearInterval(this._timer); this._timer = null; }
       if (this._ctx) { try { this._ctx.close(); } catch (_) {} this._ctx = null; }
     }
@@ -5440,6 +5831,47 @@
     el.invites.replaceChildren(box);
   }
 
+  // ── PRESENCE POLLING ──────────────────────────────────────────────────────
+  // Collects UIDs from cached groups and asks api.getPresence when available.
+  // Falls back to no-op (dots stay grey) when the API lacks getPresence.
+  async function refreshPresence() {
+    if (!api.getPresence) return;
+    const uids = new Set();
+    for (const g of _lastGroups) {
+      if (Array.isArray(g.members)) g.members.forEach((m) => { if (m.id) uids.add(m.id); });
+    }
+    if (!uids.size) return;
+    try {
+      const map = await api.getPresence(Array.from(uids));
+      if (map && typeof map === 'object') {
+        _presenceMap = map;
+        // Patch existing dots in DOM without full re-render.
+        document.querySelectorAll('.presence-dot[data-uid]').forEach((dot) => {
+          const online = !!_presenceMap[dot.dataset.uid];
+          dot.classList.toggle('online', online);
+          dot.title = online ? 'В сети' : 'Не в сети';
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ── CSS INJECTION ─────────────────────────────────────────────────────────
+  (function injectStyles() {
+    if (document.getElementById('social-ui-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'social-ui-styles';
+    s.textContent = [
+      '.loading { opacity: 0.6; cursor: wait; }',
+      '.presence-dot {',
+      '  display: inline-block; width: 10px; height: 10px;',
+      '  border-radius: 50%; background: #555;',
+      '  margin-right: 4px; vertical-align: middle;',
+      '}',
+      '.presence-dot.online { background: #43b581; }',
+    ].join('\n');
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   // ── VIEWS ─────────────────────────────────────────────────────────────────
   function openSocial() {
     el.home.classList.add('hidden');
@@ -5457,10 +5889,21 @@
         if (!openChatGid) paintGroups();
       }, 20000);
     }
+    if (!_presenceTimer) {
+      refreshPresence();
+      _presenceTimer = setInterval(() => {
+        if (!el.social.classList.contains('hidden')) refreshPresence();
+      }, 30000);
+    }
   }
 
   function closeSocial() {
     exitChat();
+    if (openSocial.timer) {
+      clearInterval(openSocial.timer);
+      openSocial.timer = null;
+    }
+    if (_presenceTimer) { clearInterval(_presenceTimer); _presenceTimer = null; }
     el.social.classList.add('hidden');
     el.home.classList.remove('hidden');
   }
@@ -5519,6 +5962,32 @@
     });
   }
 
+  // ── AUDIO-ONLY BUTTON ─────────────────────────────────────────────────────
+  // Injected into the hangup-actions bar; disables video tracks while in call.
+  (function addAudioOnlyBtn() {
+    const hangupActions = $('#call-hangup-actions');
+    if (!hangupActions) return;
+    const btn = document.createElement('button');
+    btn.id = 'btn-audio-only';
+    btn.className = 'call-btn';
+    btn.type = 'button';
+    btn.title = 'Только аудио';
+    btn.style.cssText = 'background:var(--muted,#444);font-size:0.72rem;padding:6px 10px;border-radius:12px;white-space:nowrap;';
+    btn.textContent = 'Только аудио';
+    let audioOnly = false;
+    btn.addEventListener('click', () => {
+      audioOnly = !audioOnly;
+      // Disable/re-enable local camera tracks via __rup.camStream.
+      try {
+        const cs = window.__rup && window.__rup.camStream;
+        if (cs) cs.getVideoTracks().forEach((t) => { t.enabled = !audioOnly; });
+      } catch (_) {}
+      btn.textContent = audioOnly ? 'Включить видео' : 'Только аудио';
+      btn.style.background = audioOnly ? 'var(--ok,#43b581)' : 'var(--muted,#444)';
+    });
+    hangupActions.appendChild(btn);
+  })();
+
   // ── WIRING ────────────────────────────────────────────────────────────────
   $('#btn-auth-go').addEventListener('click', doAuth);
   if ($('#btn-auth-cancel')) $('#btn-auth-cancel').addEventListener('click', closeAuth);
@@ -5565,26 +6034,43 @@
     });
   });
 
+  async function withLoading(btn, fn) {
+    if (!btn || btn.disabled) return;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+      await fn();
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
   $('#btn-create-group').addEventListener('click', () => {
     const name = ($('#group-name').value || '').trim();
     if (!name) return;
-    guard(async () => {
+    const btn = $('#btn-create-group');
+    withLoading(btn, () => guard(async () => {
       await api.createGroup(name);
       $('#group-name').value = '';
-      await paintGroups();
+      // Paint from the local cache first so the card appears immediately; the
+      // network refresh runs in the background.  Awaiting the network here used
+      // to keep the button disabled for several seconds.
+      paintGroupsFast();
       note('Группа создана');
-    });
+    }));
   });
 
   $('#btn-join-group').addEventListener('click', () => {
     const code = ($('#group-code').value || '').trim();
     if (!code) return;
-    guard(async () => {
+    const btn = $('#btn-join-group');
+    withLoading(btn, () => guard(async () => {
       await api.joinGroup(code);
       $('#group-code').value = '';
-      await paintGroups();
+      paintGroupsFast();
       note('Вы вступили в группу');
-    });
+    }));
   });
 
   if ($('#btn-new-room')) {
