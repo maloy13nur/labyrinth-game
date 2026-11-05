@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
@@ -109,11 +110,12 @@ tailwind.config = {
 
   html, body {
     height: 100%;
-    background: var(--bg);
+    background: #121317;
     color: var(--text);
     font-family: 'Sora', system-ui, -apple-system, "Segoe UI", sans-serif;
-    overflow: hidden;
   }
+
+  /* Glows are real DOM elements in <body>, not pseudo-elements */
 
   button { font-family: inherit; cursor: pointer; }
   input  { font-family: inherit; }
@@ -133,33 +135,7 @@ tailwind.config = {
     gap: 10px;
     background: transparent;
     padding: 10px;
-    overflow: hidden;
-  }
-
-  /* Ambient glow orbs */
-  #social::before,
-  #social::after {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-  }
-  #social::before {
-    width: 384px;
-    height: 384px;
-    top: -64px;
-    left: 25%;
-    background: rgba(0, 240, 255, 0.15);
-    filter: blur(120px);
-  }
-  #social::after {
-    width: 480px;
-    height: 480px;
-    bottom: 40px;
-    right: 25%;
-    background: rgba(224, 3, 99, 0.10);
-    filter: blur(140px);
+    z-index: 1;
   }
 
   .social-glow-mid {
@@ -182,14 +158,15 @@ tailwind.config = {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    background: rgba(13, 14, 18, 0.60);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(59, 73, 75, 0.45);
-    border-radius: 16px;
-    box-shadow: 0 24px 50px rgba(0,0,0,0.45);
+    background: rgba(16,17,22,0.72);
+    backdrop-filter: blur(48px) saturate(140%);
+    -webkit-backdrop-filter: blur(48px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top-color: rgba(255,255,255,0.14);
+    border-radius: 20px;
+    box-shadow: 0 0 0 1px rgba(0,240,255,0.04), 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
     position: relative;
-    z-index: 1;
+    z-index: 2;
     overflow: hidden;
   }
 
@@ -200,9 +177,8 @@ tailwind.config = {
     padding: 12px;
     margin: 12px;
     border-radius: 16px;
-    background: rgba(41, 42, 46, 0.60);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.07);
   }
 
   .me-avatar {
@@ -284,7 +260,8 @@ tailwind.config = {
     gap: 3px;
     padding: 6px 12px;
     margin: 0 12px 8px;
-    background: rgba(30,31,36,0.70);
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.06);
     border-radius: 9999px;
   }
 
@@ -301,7 +278,11 @@ tailwind.config = {
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
-  .side-tab.on { background: rgba(56, 57, 62, 0.80); color: #e3e2e8; }
+  .side-tab.on {
+    background: rgba(0,240,255,0.12);
+    color: #c8fbff;
+    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.25), 0 0 16px rgba(0,240,255,0.10);
+  }
   .side-tab b {
     display: inline-block;
     min-width: 17px;
@@ -334,19 +315,20 @@ tailwind.config = {
     box-sizing: border-box;
     height: 38px;
     padding: 0 14px 0 40px;
-    border: 1px solid rgba(59,73,75,0.5);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 9999px;
-    background: rgba(13,14,18,0.60);
+    background: rgba(255,255,255,0.04);
     color: #e3e2e8;
     font: inherit;
     font-size: 0.82rem;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   }
   .side-search-input::placeholder { color: #849495; }
   .side-search-input:focus {
     outline: none;
-    border-color: rgba(0,240,255,0.5);
-    background: rgba(30,31,36,0.90);
+    border-color: rgba(0,240,255,0.55);
+    background: rgba(0,240,255,0.05);
+    box-shadow: 0 0 0 3px rgba(0,240,255,0.10), 0 0 20px rgba(0,240,255,0.10);
   }
 
   .side-list {
@@ -380,19 +362,25 @@ tailwind.config = {
     flex: 1;
     min-width: 0;
     padding: 8px 14px;
-    border: 1px solid rgba(59, 73, 75, 0.6);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 9999px;
-    background: rgba(13, 14, 18, 0.60);
+    background: rgba(255,255,255,0.04);
     color: #e3e2e8;
     font: inherit;
     font-size: 0.82rem;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   }
   .side-input::placeholder { color: #849495; }
   .side-input:focus {
     outline: none;
-    border-color: rgba(0, 240, 255, 0.5);
-    background: rgba(30, 31, 36, 0.90);
+    border-color: rgba(0, 240, 255, 0.55);
+    background: rgba(0, 240, 255, 0.05);
+    box-shadow: 0 0 0 3px rgba(0,240,255,0.10), 0 0 20px rgba(0,240,255,0.10);
+  }
+
+  .code-input {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   /* Live call mini-card */
@@ -475,14 +463,15 @@ tailwind.config = {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: rgba(13, 14, 18, 0.50);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(59, 73, 75, 0.45);
-    border-radius: 16px;
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+    background: rgba(18,19,24,0.66);
+    backdrop-filter: blur(48px) saturate(140%);
+    -webkit-backdrop-filter: blur(48px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top-color: rgba(255,255,255,0.13);
+    border-radius: 20px;
+    box-shadow: 0 0 0 1px rgba(0,240,255,0.03), 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
     position: relative;
-    z-index: 1;
+    z-index: 2;
     overflow: hidden;
   }
 
@@ -493,12 +482,11 @@ tailwind.config = {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(41, 42, 46, 0.40);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(59, 73, 75, 0.3);
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
   }
   .social-head h2 { font-size: 0.95rem; font-weight: 600; flex: 1; color: #e3e2e8; }
+  #chat-title { font-size: 0.95rem; font-weight: 600; color: #e3e2e8; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .social-head-sub {
     font-size: 0.75rem;
     color: #b9cacb;
@@ -619,11 +607,9 @@ tailwind.config = {
     gap: 8px;
     padding: 6px 6px 6px 18px;
     border-radius: 9999px;
-    background: rgba(41, 42, 46, 0.80);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    border: 1px solid rgba(59,73,75,0.45);
+    background: linear-gradient(135deg, rgba(42,46,54,0.97) 0%, rgba(28,31,38,0.98) 100%);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,240,255,0.08), inset 0 1px 0 rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
     z-index: 10;
   }
   .chat-form-social input {
@@ -658,6 +644,7 @@ tailwind.config = {
     flex-shrink: 0;
   }
   .chat-send-btn:hover { background: #7df4ff; box-shadow: 0 0 28px rgba(0,240,255,0.6); }
+  .chat-send-icon { font-size: 18px; }
 
   .chat-line {
     font-size: 0.84rem;
@@ -682,14 +669,14 @@ tailwind.config = {
   .chat-line b { display: block; font-size: 0.70rem; margin-bottom: 3px; color: #00f0ff; }
 
   .social-hint {
-    color: #849495;
+    color: #9db0b2;
     font-size: 0.80rem;
     line-height: 1.6;
     margin-bottom: 16px;
     padding: 12px 16px;
-    background: rgba(30,31,36,0.6);
-    border-radius: 12px;
-    border: 1px solid rgba(59,73,75,0.3);
+    background: rgba(255,255,255,0.035);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.07);
   }
 
   /* ── GROUP CARDS ─────────────────────────────────────────────── */
@@ -699,18 +686,30 @@ tailwind.config = {
     margin-bottom: 10px;
   }
 
+  .group-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
   .group-card {
-    background: linear-gradient(135deg, rgba(41,42,46,0.80) 0%, rgba(30,31,36,0.50) 50%, rgba(13,14,18,0.90) 100%);
+    background: rgba(255,255,255,0.035);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(59,73,75,0.4);
-    border-radius: 16px;
-    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.075);
+    border-top-color: rgba(255,255,255,0.13);
+    border-radius: 18px;
+    padding: 16px 18px;
     margin-bottom: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transition: box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
   }
-  .group-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .group-card:hover {
+    border-color: rgba(0,240,255,0.28);
+    border-top-color: rgba(0,240,255,0.40);
+    background: rgba(0,240,255,0.05);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 28px rgba(0,240,255,0.12), inset 0 1px 0 rgba(255,255,255,0.07);
+  }
 
   .group-card header {
     display: flex;
@@ -754,10 +753,10 @@ tailwind.config = {
   .chip {
     font-size: 0.74rem;
     color: #b9cacb;
-    background: rgba(41,42,46,0.7);
+    background: rgba(255,255,255,0.055);
     border-radius: 9999px;
     padding: 3px 10px;
-    border: 1px solid rgba(59,73,75,0.4);
+    border: 1px solid rgba(255,255,255,0.09);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -767,19 +766,20 @@ tailwind.config = {
   .act {
     padding: 5px 14px;
     border-radius: 9999px;
-    border: 1px solid rgba(59,73,75,0.5);
-    background: rgba(41,42,46,0.7);
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
     color: #e3e2e8;
     font-size: 0.78rem;
     font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     white-space: nowrap;
     font-family: inherit;
   }
   .act:hover {
     border-color: rgba(0,240,255,0.5);
-    background: rgba(41,42,46,1);
+    background: rgba(0,240,255,0.08);
+    box-shadow: 0 0 16px rgba(0,240,255,0.12);
   }
   .act.call {
     border-color: rgba(0,240,255,0.5);
@@ -787,8 +787,8 @@ tailwind.config = {
     background: rgba(0,240,255,0.08);
   }
   .act.call:hover {
-    background: rgba(0,240,255,0.25);
-    box-shadow: 0 0 12px rgba(0,240,255,0.3);
+    background: rgba(0,240,255,0.20);
+    box-shadow: 0 0 16px rgba(0,240,255,0.30);
   }
 
   /* ── RIGHT PANEL (member presence ~280px) ───────────────────── */
@@ -797,14 +797,15 @@ tailwind.config = {
     flex-shrink: 0;
     display: none;
     flex-direction: column;
-    background: rgba(13, 14, 18, 0.60);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(59, 73, 75, 0.45);
-    border-radius: 16px;
-    box-shadow: 0 24px 50px rgba(0,0,0,0.45);
+    background: rgba(16,17,22,0.72);
+    backdrop-filter: blur(48px) saturate(140%);
+    -webkit-backdrop-filter: blur(48px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top-color: rgba(255,255,255,0.14);
+    border-radius: 20px;
+    box-shadow: 0 0 0 1px rgba(0,240,255,0.04), 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
     position: relative;
-    z-index: 1;
+    z-index: 2;
     overflow: hidden;
   }
   @media (min-width: 1200px) { .social-right { display: flex; } }
@@ -916,17 +917,21 @@ tailwind.config = {
   .side-btn {
     flex-shrink: 0;
     padding: 8px 14px;
-    border: 1px solid rgba(59, 73, 75, 0.6);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 9999px;
-    background: rgba(41, 42, 46, 0.80);
+    background: rgba(255,255,255,0.05);
     color: #e3e2e8;
     font: inherit;
     font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   }
-  .side-btn:hover { border-color: rgba(0, 240, 255, 0.5); background: rgba(41, 42, 46, 1); }
+  .side-btn:hover {
+    border-color: rgba(0, 240, 255, 0.5);
+    background: rgba(0, 240, 255, 0.08);
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.12);
+  }
 
   /* ── CHAT BUBBLES ─────────────────────────────────────────────── */
   .chat-msg {
@@ -994,11 +999,11 @@ tailwind.config = {
     cursor: pointer;
     transition: background 0.18s, color 0.18s;
   }
-  .rail-row:hover { background: rgba(30,31,36,0.7); color: #e3e2e8; }
+  .rail-row:hover { background: rgba(255,255,255,0.055); color: #e3e2e8; }
   .rail-row.on {
-    background: rgba(0,240,255,0.1);
+    background: rgba(0,240,255,0.10);
     color: #e3e2e8;
-    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.22);
+    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.24), 0 0 20px rgba(0,240,255,0.08);
   }
   .rail-ico {
     width: 26px;
@@ -1147,19 +1152,16 @@ tailwind.config = {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: rgba(18, 19, 23, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(10, 11, 14, 0.75);
     overflow-y: auto;
   }
 
   #auth .entry {
-    background: rgba(30, 31, 36, 0.70);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    border: 1px solid rgba(59, 73, 75, 0.5);
+    background: linear-gradient(160deg, rgba(32,34,40,0.98) 0%, rgba(22,24,30,0.99) 100%);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-top-color: rgba(255,255,255,0.14);
     border-radius: 32px;
-    box-shadow: 0 24px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 0 60px rgba(0,240,255,0.08), 0 24px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
   }
 
   .auth-tabs {
@@ -1846,303 +1848,96 @@ tailwind.config = {
     .ctl { width: 58px; }
     .ctl .icon { width: 38px; height: 38px; }
   }
-
-  /* Aether Glass: group-card glassmorphism */
-  .group-card {
-    background: rgba(30,31,36,0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(59,73,75,0.4);
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transition: background 0.2s, box-shadow 0.2s;
-  }
-  .group-card:hover {
-    background: rgba(41,42,46,0.75);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-  }
-  .group-card header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
-  }
-  .group-card header b {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #e3e2e8;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .group-code {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #00f0ff;
-    background: rgba(0,240,255,0.1);
-    border: 1px solid rgba(0,240,255,0.25);
-    border-radius: 9999px;
-    padding: 2px 10px;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-  }
-  .group-code:hover { background: rgba(0,240,255,0.18); }
-  .group-members {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .chip {
-    font-size: 0.74rem;
-    color: #b9cacb;
-    background: rgba(41,42,46,0.7);
-    border-radius: 9999px;
-    padding: 3px 10px;
-    border: 1px solid rgba(59,73,75,0.4);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .chip b { color: #e3e2e8; font-weight: 600; }
-  .act {
-    padding: 5px 14px;
-    border-radius: 9999px;
-    border: 1px solid rgba(59,73,75,0.5);
-    background: rgba(41,42,46,0.7);
-    color: #e3e2e8;
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
-  }
-  .act:hover { background: rgba(56,57,62,0.9); }
-  .act.call {
-    background: rgba(0,240,255,0.15);
-    border-color: rgba(0,240,255,0.35);
-    color: #00f0ff;
-  }
-  .act.call:hover {
-    background: rgba(0,240,255,0.25);
-    box-shadow: 0 0 12px rgba(0,240,255,0.3);
-  }
-  /* Chat messages — bubble layout */
-  .chat-msg {
-    display: flex;
-    justify-content: flex-start;
-    padding: 2px 0;
-  }
-  .chat-msg.own { justify-content: flex-end; }
-  .chat-bubble {
-    max-width: 76%;
-    padding: 10px 15px;
-    border-radius: 20px;
-    border-top-left-radius: 6px;
-    font-size: 0.88rem;
-    line-height: 1.5;
-    background: rgba(30,31,36,0.70);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    color: #e3e2e8;
-    border: 1px solid rgba(59,73,75,0.35);
-    word-break: break-word;
-  }
-  .chat-bubble.own {
-    border-radius: 20px;
-    border-bottom-right-radius: 6px;
-    background: linear-gradient(135deg, rgba(0,240,255,0.14), rgba(132,43,210,0.10), rgba(224,3,99,0.08));
-    border-color: rgba(0,240,255,0.18);
-  }
-  .chat-name {
-    font-size: 0.72rem;
-    font-weight: 600;
-    margin-bottom: 3px;
-  }
-  .chat-text { color: #e3e2e8; }
-  /* Invite row glassmorphism */
-  .invite-row {
-    background: rgba(30,31,36,0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(0,240,255,0.2);
-    border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    color: #e3e2e8;
-  }
-  .invite-row b {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.85rem;
-  }
-  .invite-row .side-btn { padding: 6px 9px; font-size: 0.75rem; }
-  /* Presence dot */
-  .presence-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: rgba(132,148,149,0.4);
-    flex-shrink: 0;
-  }
-  .presence-dot.online { background: #00f0ff; box-shadow: 0 0 6px rgba(0,240,255,0.6); }
-  /* #social layout */
-  #social { z-index: 1; }
-
-  /* Reference hides scrollbars entirely; scrolling stays functional. */
-  .social-body,
-  .chat-log-social,
-  #side-groups,
-  #groups,
-  .chat-log {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .social-body::-webkit-scrollbar,
-  .chat-log-social::-webkit-scrollbar,
-  #side-groups::-webkit-scrollbar,
-  #groups::-webkit-scrollbar,
-  .chat-log::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-    display: none;
-  }
-
-  /* Left rail: compact group rows (mirror of the main card list) */
-  .rail-row {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    width: 100%;
-    padding: 8px 10px;
-    margin-bottom: 4px;
-    border: none;
-    border-radius: 12px;
-    background: transparent;
-    color: #b9cacb;
-    font-family: inherit;
-    font-size: 0.83rem;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
-  }
-  .rail-row:hover { background: rgba(30,31,36,0.7); color: #e3e2e8; }
-  .rail-row.on {
-    background: rgba(0,240,255,0.1);
-    color: #e3e2e8;
-    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.22);
-  }
-  .rail-ico {
-    width: 26px;
-    height: 26px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #002022;
-    background: rgba(0,240,255,0.75);
-  }
-  .rail-row.on .rail-ico { background: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.5); }
-  .rail-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 </style>
 </head>
 <body>
+<!-- Ambient glows — каждый элемент fixed отдельно, без overflow:hidden-обёртки -->
+<div style="position:fixed;width:760px;height:760px;top:-180px;left:18%;border-radius:50%;background:rgba(0,240,255,0.20);filter:blur(120px);pointer-events:none;z-index:0"></div>
+<div style="position:fixed;width:640px;height:640px;top:28%;right:-140px;border-radius:50%;background:rgba(132,43,210,0.22);filter:blur(140px);pointer-events:none;z-index:0"></div>
+<div style="position:fixed;width:700px;height:700px;bottom:-160px;left:28%;border-radius:50%;background:rgba(224,3,99,0.16);filter:blur(130px);pointer-events:none;z-index:0"></div>
 
-<!-- ══ HOME ══ -->
-<!-- Ambient glows -->
-<div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden">
-  <div style="position:absolute;top:-4rem;left:25%;width:24rem;height:24rem;background:rgba(0,240,255,0.08);border-radius:50%;filter:blur(120px)"></div>
-  <div style="position:absolute;bottom:2.5rem;right:25%;width:30rem;height:30rem;background:rgba(224,3,99,0.07);border-radius:50%;filter:blur(140px)"></div>
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:37rem;height:37rem;background:rgba(132,43,210,0.07);border-radius:50%;filter:blur(160px)"></div>
-</div>
+<div id="social" class="hidden dark">
 
-<div id="social" class="hidden">
-  <div class="social-glow-mid"></div>
-  <aside class="social-side" style="width:300px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(13,14,18,0.6);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border-right:1px solid rgba(59,73,75,0.5);box-shadow:0 24px 50px rgba(0,0,0,0.45);position:relative;z-index:1">
-    <div class="me" id="me-box" style="padding:14px 16px;border-bottom:1px solid rgba(59,73,75,0.4);display:flex;align-items:center;gap:10px;margin:0;border-radius:0;background:transparent;backdrop-filter:none">
-      <div class="me-avatar" id="me-avatar" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;color:#002022;background:#00f0ff;box-shadow:0 0 12px rgba(0,240,255,0.4)">?</div>
-      <div class="me-text" style="display:flex;flex-direction:column;min-width:0;flex:1">
-        <b id="me-name" style="font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e3e2e8">Гость</b>
-        <span id="me-tag" style="font-size:0.7rem;color:#849495;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">без аккаунта</span>
+  <!-- LEFT SIDEBAR -->
+  <aside class="social-side">
+    <!-- Current user capsule -->
+    <div class="me" id="me-box">
+      <div class="me-avatar" id="me-avatar">?</div>
+      <div class="me-text">
+        <b id="me-name">Гость</b>
+        <span id="me-tag">без аккаунта</span>
       </div>
-      <button class="me-out" id="btn-signout" title="Выйти из аккаунта" hidden style="width:26px;height:26px;flex-shrink:0;border:1px solid rgba(59,73,75,0.6);border-radius:8px;background:transparent;color:#849495;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+      <button class="me-out" id="btn-signout" title="Выйти из аккаунта" hidden>&times;</button>
     </div>
 
-    <div class="side-tabs" style="display:flex;padding:8px 12px;gap:4px;border-bottom:1px solid rgba(59,73,75,0.3)">
-      <button class="side-tab on" data-tab="groups" style="flex:1;padding:7px 12px;border-radius:9999px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;background:rgba(56,57,62,0.8);color:#e3e2e8;transition:all .2s;font-family:inherit">Группы</button>
+    <!-- Capsule tab switcher -->
+    <div class="side-tabs">
+      <button class="side-tab on" data-tab="groups">Группы</button>
     </div>
 
+    <!-- Calls/invites (hidden until an invite arrives) -->
     <div class="side-list" id="side-calls" style="flex-shrink:0">
-      <div class="side-group hidden" id="invites-wrap" style="padding:8px 12px">
+      <div class="hidden" id="invites-wrap" style="padding:4px 0">
         <div class="side-label">Звонки</div>
         <div id="invites"></div>
       </div>
     </div>
 
+    <!-- Omni search -->
     <div class="side-search">
       <span class="side-search-ico material-symbols-rounded">search</span>
-      <input class="side-search-input" id="side-search" type="search" placeholder="Поиск групп…" autocomplete="off">
+      <input class="side-search-input" id="side-search" type="search" placeholder="Поиск групп&hellip;" autocomplete="off">
     </div>
 
-    <div class="side-list hidden" id="side-groups" style="flex:1;overflow-y:auto;padding:8px 12px">
+    <!-- Group rail -->
+    <div class="side-list hidden" id="side-groups">
       <div class="side-empty" id="groups-empty">Групп нет.<br>Создайте или войдите по коду.</div>
       <div id="groups"></div>
     </div>
   </aside>
 
-  <main class="social-main" style="flex:1;display:flex;flex-direction:column;min-width:0;background:rgba(13,14,18,0.5);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);position:relative;overflow:hidden;z-index:1">
-    <div class="social-head" id="social-head" style="height:56px;padding:0 20px;flex-shrink:0;display:flex;align-items:center;gap:12px;background:rgba(41,42,46,0.4);backdrop-filter:blur(24px);border-bottom:1px solid rgba(59,73,75,0.3)">
-      <h2 id="main-title" style="font-size:0.95rem;font-weight:600;color:#e3e2e8;flex:1">Группы</h2>
-      <button class="side-btn hidden" id="chat-back" type="button" style="padding:6px 14px;border-radius:9999px;font-size:0.8rem;flex-shrink:0">← Назад</button>
-      <b id="chat-title" class="hidden" style="font-size:0.95rem;font-weight:600;color:#e3e2e8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Чат группы</b>
-      <button class="btn primary narrow" id="btn-new-room" style="padding:7px 16px;border-radius:9999px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;background:#00f0ff;color:#002022;box-shadow:0 0 16px rgba(0,240,255,0.35);transition:all .2s;font-family:inherit">Создать комнату</button>
+  <!-- MAIN PANEL -->
+  <main class="social-main">
+    <div class="social-head" id="social-head">
+      <h2 id="main-title">Группы</h2>
+      <button class="side-btn hidden" id="chat-back" type="button">&larr; Назад</button>
+      <b id="chat-title" class="hidden">Чат группы</b>
+      <button class="btn primary narrow" id="btn-new-room">Создать комнату</button>
     </div>
 
-    <div class="social-body" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:720px;width:100%">
+    <div class="social-body">
+      <!-- Groups panel -->
       <div id="panel-groups">
-        <p class="social-hint" style="background:rgba(30,31,36,0.6);border-radius:12px;border:1px solid rgba(59,73,75,0.3);padding:12px 16px">
-          Группа — это общий список людей и один общий чат. Как только вы позвали группу,
-          у всех её участников появляется кнопка «Присоединиться».
+        <p class="social-hint">
+          Группа &mdash; это общий список людей и один общий чат. Как только вы позвали группу,
+          у всех её участников появляется кнопка &laquo;Присоединиться&raquo;.
         </p>
         <div class="group-create">
-          <input class="side-input" id="group-name" placeholder="Название группы" maxlength="60" autocomplete="off" style="height:40px;border-radius:9999px">
-          <button class="side-btn" id="btn-create-group" style="height:40px;padding:0 18px;border-radius:9999px;border:none;background:#00f0ff;color:#002022;font-weight:600;font-size:0.82rem;white-space:nowrap;cursor:pointer;font-family:inherit">Создать</button>
+          <input class="side-input" id="group-name" placeholder="Название группы" maxlength="60" autocomplete="off">
+          <button class="side-btn" id="btn-create-group">Создать</button>
         </div>
         <div class="group-create">
-          <input class="side-input" id="group-code" placeholder="Код группы" maxlength="8" autocomplete="off" spellcheck="false" style="height:40px;border-radius:9999px;text-transform:uppercase;letter-spacing:.1em">
-          <button class="side-btn" id="btn-join-group" style="height:40px;padding:0 18px;border-radius:9999px;white-space:nowrap;cursor:pointer;font-family:inherit">Войти</button>
+          <input class="side-input code-input" id="group-code" placeholder="Код группы" maxlength="8" autocomplete="off" spellcheck="false">
+          <button class="side-btn" id="btn-join-group">Войти</button>
         </div>
         <div id="groups-list"></div>
       </div>
 
-      <div id="panel-chat" class="hidden" style="display:flex;flex-direction:column;flex:1;height:100%">
-        <div class="chat-log-social" id="chat-log-social" style="padding-bottom:80px"></div>
-        <form class="chat-form-social" id="chat-form-social" style="border-radius:9999px;padding:6px 6px 6px 18px">
-          <input id="chat-input-social" placeholder="Сообщение…" maxlength="500" autocomplete="off">
-          <button class="side-btn" type="submit" style="border-radius:9999px;padding:8px 18px;border:none;background:#00f0ff;color:#002022;font-weight:600;font-family:inherit;box-shadow:0 0 16px rgba(0,240,255,0.35)">Отправить</button>
+      <!-- Chat panel -->
+      <div id="panel-chat" class="hidden">
+        <div class="chat-log-social" id="chat-log-social"></div>
+        <form class="chat-form-social" id="chat-form-social">
+          <input id="chat-input-social" placeholder="Сообщение&hellip;" maxlength="500" autocomplete="off">
+          <button class="chat-send-btn" type="submit">
+            Отправить
+            <span class="material-symbols-rounded chat-send-icon">send</span>
+          </button>
         </form>
       </div>
     </div>
   </main>
 
-  <!-- RIGHT PANEL: member presence -->
+  <!-- RIGHT PANEL: real member presence -->
   <div class="social-right" id="social-right">
     <div class="social-right-head">
       <div class="social-right-head-row">
@@ -6394,8 +6189,7 @@ tailwind.config = {
       card.appendChild(members);
 
       const actions = document.createElement('div');
-      actions.className = 'group-create';
-      actions.style.marginTop = '10px';
+      actions.className = 'group-card-actions';
       const leave = document.createElement('button');
       leave.className = 'side-btn';
       leave.type = 'button';
