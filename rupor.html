@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -121,13 +121,16 @@ tailwind.config = {
   .hidden { display: none !important; }
 
   /* ══ ACCOUNT, FRIENDS, GROUPS ══════════════════════════════════ */
+
+  /* ── GLOBAL SCROLLBAR HIDE ──────────────────────────────────── */
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+
   #social {
     position: fixed;
     inset: 0;
     display: flex;
     gap: 10px;
-    /* Transparent so the ambient glow orbs behind it actually show through;
-       the panels carry their own frosted backgrounds. */
     background: transparent;
     padding: 10px;
     overflow: hidden;
@@ -173,8 +176,9 @@ tailwind.config = {
     z-index: 0;
   }
 
+  /* ── LEFT SIDEBAR (320px like reference) ─────────────────────── */
   .social-side {
-    width: 300px;
+    width: 320px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -232,10 +236,28 @@ tailwind.config = {
   }
   .me-text span {
     font-size: 0.68rem;
-    color: #849495;
+    color: #00f0ff;
+    letter-spacing: 0.04em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .me-text span::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00f0ff;
+    box-shadow: 0 0 6px rgba(0,240,255,0.7);
+    flex-shrink: 0;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
   }
 
   .me-out {
@@ -256,15 +278,19 @@ tailwind.config = {
   }
   .me-out:hover { color: var(--danger); border-color: var(--danger); }
 
+  /* Capsule tab switcher */
   .side-tabs {
     display: flex;
-    gap: 4px;
-    padding: 8px 12px 4px;
+    gap: 3px;
+    padding: 6px 12px;
+    margin: 0 12px 8px;
+    background: rgba(30,31,36,0.70);
+    border-radius: 9999px;
   }
 
   .side-tab {
     flex: 1;
-    padding: 8px 6px;
+    padding: 7px 6px;
     border: none;
     border-radius: 9999px;
     background: transparent;
@@ -288,10 +314,45 @@ tailwind.config = {
     line-height: 17px;
   }
 
+  /* Omni search */
+  .side-search {
+    position: relative;
+    margin: 0 12px 8px;
+  }
+  .side-search-ico {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #849495;
+    font-size: 18px;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .side-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 38px;
+    padding: 0 14px 0 40px;
+    border: 1px solid rgba(59,73,75,0.5);
+    border-radius: 9999px;
+    background: rgba(13,14,18,0.60);
+    color: #e3e2e8;
+    font: inherit;
+    font-size: 0.82rem;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .side-search-input::placeholder { color: #849495; }
+  .side-search-input:focus {
+    outline: none;
+    border-color: rgba(0,240,255,0.5);
+    background: rgba(30,31,36,0.90);
+  }
+
   .side-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 12px;
+    padding: 0 12px 8px;
     min-height: 0;
   }
 
@@ -310,84 +371,9 @@ tailwind.config = {
     text-transform: uppercase;
     color: #849495;
     padding: 10px 6px 6px;
-  }
-
-  .person {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 8px 10px;
-    border-radius: 16px;
-    transition: background 0.15s;
-  }
-  .person:hover { background: rgba(30, 31, 36, 0.70); }
-
-  .person .ava {
-    position: relative;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #002022;
-    background: #00f0ff;
-  }
-
-  .person .ava i {
-    position: absolute;
-    right: -1px;
-    bottom: -1px;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    border: 2px solid #1a1b20;
-    background: #849495;
-  }
-  .person .ava i.on { background: #00f0ff; box-shadow: 0 0 6px rgba(0,240,255,0.6); }
-
-  .person .who {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.84rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #e3e2e8;
-  }
-  .person .who small {
-    display: block;
-    color: #849495;
-    font-size: 0.68rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .person .act {
-    flex-shrink: 0;
-    border: 1px solid rgba(59, 73, 75, 0.7);
-    border-radius: 9999px;
-    background: transparent;
-    color: #e3e2e8;
-    font: inherit;
-    font-size: 0.72rem;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .person .act:hover { border-color: #00f0ff; color: #00f0ff; }
-  .person .act.call { border-color: #00f0ff; color: #00f0ff; }
-  .person .act.no { color: #849495; }
-  .person .act.no:hover { border-color: var(--danger); color: var(--danger); }
-
-  .side-actions {
-    padding: 10px 12px;
-    border-top: 1px solid rgba(59, 73, 75, 0.4);
-    display: flex;
-    gap: 6px;
+    justify-content: space-between;
   }
 
   .side-input {
@@ -409,6 +395,62 @@ tailwind.config = {
     background: rgba(30, 31, 36, 0.90);
   }
 
+  /* Live call mini-card */
+  .live-stage-card {
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(41,42,46,0.80) 0%, rgba(30,31,36,0.50) 50%, rgba(13,14,18,0.90) 100%);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    border: 1px solid rgba(59,73,75,0.4);
+  }
+  .live-stage-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .live-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(224,3,99,0.15);
+    color: #e00363;
+    animation: pulse-dot 1.5s infinite;
+  }
+
+  /* Audio waveform */
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: rgba(13,14,18,0.70);
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  .waveform span {
+    width: 3px;
+    border-radius: 9999px;
+    background: rgba(0,240,255,0.7);
+  }
+  .waveform span:nth-child(1) { height: 8px;  animation: wave 1.5s 0.0s infinite ease-in-out alternate; }
+  .waveform span:nth-child(2) { height: 20px; animation: wave 1.5s 0.1s infinite ease-in-out alternate; background: #00f0ff; }
+  .waveform span:nth-child(3) { height: 12px; animation: wave 1.5s 0.2s infinite ease-in-out alternate; }
+  .waveform span:nth-child(4) { height: 24px; animation: wave 1.5s 0.3s infinite ease-in-out alternate; background: #00f0ff; }
+  .waveform span:nth-child(5) { height: 16px; animation: wave 1.5s 0.4s infinite ease-in-out alternate; }
+  .waveform span:nth-child(6) { height: 20px; animation: wave 1.5s 0.5s infinite ease-in-out alternate; background: rgba(0,240,255,0.5); }
+  .waveform span:nth-child(7) { height: 10px; animation: wave 1.5s 0.6s infinite ease-in-out alternate; }
+  .waveform span:nth-child(8) { height: 18px; animation: wave 1.5s 0.7s infinite ease-in-out alternate; }
+  @media (prefers-reduced-motion: reduce) { .waveform span { animation: none !important; } }
+  @keyframes wave {
+    from { transform: scaleY(0.4); opacity: 0.6; }
+    to   { transform: scaleY(1.0); opacity: 1.0; }
+  }
+
   .invite-row {
     display: flex;
     align-items: center;
@@ -419,15 +461,579 @@ tailwind.config = {
     border-radius: 16px;
     background: rgba(0, 240, 255, 0.06);
   }
-  .invite-row b {
+
+  .side-actions {
+    padding: 10px 12px;
+    border-top: 1px solid rgba(59, 73, 75, 0.4);
+    display: flex;
+    gap: 6px;
+  }
+
+  /* ── MAIN PANEL ──────────────────────────────────────────────── */
+  .social-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: rgba(13, 14, 18, 0.50);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(59, 73, 75, 0.45);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .social-head {
+    height: 64px;
+    padding: 0 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(41, 42, 46, 0.40);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(59, 73, 75, 0.3);
+  }
+  .social-head h2 { font-size: 0.95rem; font-weight: 600; flex: 1; color: #e3e2e8; }
+  .social-head-sub {
+    font-size: 0.75rem;
+    color: #b9cacb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Head icon circle */
+  .social-head-ico {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0,240,255,0.30), rgba(132,43,210,0.30));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #00f0ff;
+  }
+
+  /* Participant avatar stack in header */
+  .head-avatars {
+    display: flex;
+    align-items: center;
+    margin-right: 4px;
+  }
+  .head-avatars .ha {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(13,14,18,0.8);
+    margin-left: -8px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00363a;
+  }
+  .head-avatars .ha:first-child { margin-left: 0; }
+
+  .btn.narrow { width: auto; padding: 9px 18px; font-size: 0.80rem; }
+
+  .social-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── GROUP CHAT ─────────────────────────────────────────────── */
+  #panel-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+  }
+
+  .chat-head-social {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(59, 73, 75, 0.4);
+    margin-bottom: 10px;
+  }
+  .chat-head-social b { font-size: 0.92rem; color: #e3e2e8; }
+
+  .chat-log-social {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 4px 100px;
+  }
+
+  /* Date separator */
+  .chat-date-sep {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  .chat-date-sep span {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #849495;
+    padding: 3px 14px;
+    border-radius: 9999px;
+    background: rgba(30,31,36,0.60);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Floating composer pill */
+  .chat-form-social {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 720px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 18px;
+    border-radius: 9999px;
+    background: rgba(41, 42, 46, 0.80);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    border: 1px solid rgba(59,73,75,0.45);
+    z-index: 10;
+  }
+  .chat-form-social input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #e3e2e8;
+    font: inherit;
+    font-size: 0.92rem;
+  }
+  .chat-form-social input::placeholder { color: #849495; }
+  .chat-form-social input:focus { outline: none; }
+
+  .chat-send-btn {
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    border: none;
+    background: #00f0ff;
+    color: #002022;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,240,255,0.4);
+    transition: background 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .chat-send-btn:hover { background: #7df4ff; box-shadow: 0 0 28px rgba(0,240,255,0.6); }
+
+  .chat-line {
+    font-size: 0.84rem;
+    line-height: 1.5;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border-top-left-radius: 6px;
+    background: rgba(30, 31, 36, 0.70);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    align-self: flex-start;
+    max-width: 88%;
+    word-break: break-word;
+    color: #e3e2e8;
+  }
+  .chat-line.mine {
+    align-self: flex-end;
+    border-radius: 20px;
+    border-bottom-right-radius: 6px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.20), rgba(132, 43, 210, 0.15), rgba(224, 3, 99, 0.15));
+  }
+  .chat-line b { display: block; font-size: 0.70rem; margin-bottom: 3px; color: #00f0ff; }
+
+  .social-hint {
+    color: #849495;
+    font-size: 0.80rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: rgba(30,31,36,0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(59,73,75,0.3);
+  }
+
+  /* ── GROUP CARDS ─────────────────────────────────────────────── */
+  .group-create {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .group-card {
+    background: linear-gradient(135deg, rgba(41,42,46,0.80) 0%, rgba(30,31,36,0.50) 50%, rgba(13,14,18,0.90) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(59,73,75,0.4);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: box-shadow 0.2s;
+  }
+  .group-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+
+  .group-card header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .group-card header b {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e3e2e8;
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.85rem;
   }
-  .invite-row .side-btn { padding: 6px 9px; font-size: 0.75rem; }
+
+  .group-code {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #00f0ff;
+    background: rgba(0,240,255,0.1);
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 9999px;
+    padding: 2px 10px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .group-code:hover { background: rgba(0,240,255,0.18); }
+
+  .group-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .chip {
+    font-size: 0.74rem;
+    color: #b9cacb;
+    background: rgba(41,42,46,0.7);
+    border-radius: 9999px;
+    padding: 3px 10px;
+    border: 1px solid rgba(59,73,75,0.4);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .chip b { color: #e3e2e8; font-weight: 600; }
+
+  .act {
+    padding: 5px 14px;
+    border-radius: 9999px;
+    border: 1px solid rgba(59,73,75,0.5);
+    background: rgba(41,42,46,0.7);
+    color: #e3e2e8;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .act:hover {
+    border-color: rgba(0,240,255,0.5);
+    background: rgba(41,42,46,1);
+  }
+  .act.call {
+    border-color: rgba(0,240,255,0.5);
+    color: #00f0ff;
+    background: rgba(0,240,255,0.08);
+  }
+  .act.call:hover {
+    background: rgba(0,240,255,0.25);
+    box-shadow: 0 0 12px rgba(0,240,255,0.3);
+  }
+
+  /* ── RIGHT PANEL (member presence ~280px) ───────────────────── */
+  .social-right {
+    width: 280px;
+    flex-shrink: 0;
+    display: none;
+    flex-direction: column;
+    background: rgba(13, 14, 18, 0.60);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(59, 73, 75, 0.45);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.45);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+  @media (min-width: 1200px) { .social-right { display: flex; } }
+
+  .social-right-head {
+    padding: 16px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid rgba(59,73,75,0.3);
+    flex-shrink: 0;
+  }
+  .social-right-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .social-right-head-row span {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #e3e2e8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .social-right-head-row .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00f0ff; box-shadow: 0 0 8px rgba(0,240,255,0.8);
+    animation: pulse-dot 2s infinite;
+  }
+  .social-right-sub { font-size: 0.72rem; color: #849495; }
+
+  .social-right-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+  .presence-section { margin-bottom: 14px; }
+  .presence-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #849495;
+    padding: 4px 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    cursor: default;
+    transition: background 0.15s;
+  }
+  .member-row:hover { background: rgba(30,31,36,0.70); }
+
+  .member-ava {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #002022;
+  }
+  .member-ava .member-status {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(13,14,18,0.9);
+    background: #849495;
+  }
+  .member-ava .member-status.online {
+    background: #00f0ff;
+    box-shadow: 0 0 6px rgba(0,240,255,0.7);
+  }
+
+  .member-info { flex: 1; min-width: 0; }
+  .member-name {
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: #e3e2e8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .member-name.offline { color: #849495; }
+  .member-detail {
+    font-size: 0.68rem;
+    color: #849495;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+  }
+  .member-detail.online-label { color: #00f0ff; }
+
+  /* ── SHARED BUTTONS ──────────────────────────────────────────── */
+  .side-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border: 1px solid rgba(59, 73, 75, 0.6);
+    border-radius: 9999px;
+    background: rgba(41, 42, 46, 0.80);
+    color: #e3e2e8;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .side-btn:hover { border-color: rgba(0, 240, 255, 0.5); background: rgba(41, 42, 46, 1); }
+
+  /* ── CHAT BUBBLES ─────────────────────────────────────────────── */
+  .chat-msg {
+    display: flex;
+    justify-content: flex-start;
+    padding: 2px 0;
+  }
+  .chat-msg.own { justify-content: flex-end; }
+  .chat-bubble {
+    max-width: 76%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border-top-left-radius: 6px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    background: rgba(30,31,36,0.70);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #e3e2e8;
+    border: 1px solid rgba(59,73,75,0.35);
+    word-break: break-word;
+  }
+  .chat-bubble.own {
+    border-radius: 20px;
+    border-bottom-right-radius: 6px;
+    background: linear-gradient(135deg, rgba(0,240,255,0.14), rgba(132,43,210,0.10), rgba(224,3,99,0.08));
+    border-color: rgba(0,240,255,0.18);
+  }
+  .chat-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .chat-text { color: #e3e2e8; }
+
+  /* ── INVITE ROW ──────────────────────────────────────────────── */
+  .invite-row {
+    background: rgba(30,31,36,0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,240,255,0.2);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── LEFT RAIL ────────────────────────────────────────────────── */
+  .rail-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #b9cacb;
+    font-family: inherit;
+    font-size: 0.83rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+  }
+  .rail-row:hover { background: rgba(30,31,36,0.7); color: #e3e2e8; }
+  .rail-row.on {
+    background: rgba(0,240,255,0.1);
+    color: #e3e2e8;
+    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.22);
+  }
+  .rail-ico {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #002022;
+    background: rgba(0,240,255,0.75);
+  }
+  .rail-row.on .rail-ico { background: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.5); }
+  .rail-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── PRESENCE DOT ─────────────────────────────────────────────── */
+  .presence-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #555;
+    flex-shrink: 0;
+  }
+  .presence-dot.online {
+    background: #00f0ff;
+    box-shadow: 0 0 6px rgba(0,240,255,0.6);
+  }
 
   /* ── INCOMING CALL OVERLAY ─────────────────────────────────────────────── */
   #call-overlay {
@@ -533,214 +1139,6 @@ tailwind.config = {
   .call-btn.hangup { background: var(--danger); color: var(--danger-ink); }
   .call-btn.hangup:hover { filter: brightness(1.15); }
 
-  .side-btn {
-    flex-shrink: 0;
-    padding: 8px 14px;
-    border: 1px solid rgba(59, 73, 75, 0.6);
-    border-radius: 9999px;
-    background: rgba(41, 42, 46, 0.80);
-    color: #e3e2e8;
-    font: inherit;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .side-btn:hover { border-color: rgba(0, 240, 255, 0.5); background: rgba(41, 42, 46, 1); }
-
-  .social-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    background: rgba(13, 14, 18, 0.50);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(59, 73, 75, 0.45);
-    border-radius: 16px;
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
-    position: relative;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .social-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
-    background: rgba(41, 42, 46, 0.40);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(59, 73, 75, 0.3);
-  }
-  .social-head h2 { font-size: 1rem; font-weight: 700; flex: 1; color: #e3e2e8; }
-
-  .btn.narrow { width: auto; padding: 9px 18px; font-size: 0.80rem; }
-
-  .social-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    max-width: 720px;
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  .social-hint {
-    color: #849495;
-    font-size: 0.80rem;
-    line-height: 1.6;
-    margin-bottom: 16px;
-  }
-
-  /* ── GROUP CHAT ─────────────────────────────────────────────── */
-  #panel-chat {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .chat-head-social {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(59, 73, 75, 0.4);
-    margin-bottom: 10px;
-  }
-  .chat-head-social b { font-size: 0.92rem; color: #e3e2e8; }
-
-  .chat-log-social {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-right: 4px;
-    padding-bottom: 8px;
-  }
-
-  .chat-line {
-    font-size: 0.84rem;
-    line-height: 1.5;
-    padding: 10px 14px;
-    border-radius: 20px;
-    border-top-left-radius: 6px;
-    background: rgba(30, 31, 36, 0.70);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    align-self: flex-start;
-    max-width: 88%;
-    word-break: break-word;
-    color: #e3e2e8;
-  }
-  .chat-line.mine {
-    align-self: flex-end;
-    border-radius: 20px;
-    border-bottom-right-radius: 6px;
-    background: linear-gradient(135deg, rgba(0, 240, 255, 0.20), rgba(132, 43, 210, 0.15), rgba(224, 3, 99, 0.15));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-  }
-  .chat-line b { display: block; font-size: 0.70rem; margin-bottom: 3px; color: #00f0ff; }
-
-  .chat-form-social {
-    display: flex;
-    gap: 8px;
-    padding: 10px 12px;
-    margin: 8px 0 0;
-    border-radius: 9999px;
-    background: rgba(41, 42, 46, 0.80);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    align-items: center;
-  }
-  .chat-form-social input {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 4px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: #e3e2e8;
-    font: inherit;
-    font-size: 0.84rem;
-  }
-  .chat-form-social input::placeholder { color: #849495; }
-  .chat-form-social input:focus { outline: none; }
-
-  .group-create {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-
-  .group-card {
-    border: 1px solid rgba(59, 73, 75, 0.5);
-    border-radius: 16px;
-    padding: 14px;
-    margin-top: 12px;
-    background: rgba(30, 31, 36, 0.70);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-  }
-
-  .group-card header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-  .group-card header b { flex: 1; font-size: 0.9rem; color: #e3e2e8; }
-
-  .group-code {
-    font-family: ui-monospace, monospace;
-    font-size: 0.72rem;
-    color: #00f0ff;
-    letter-spacing: 0.1em;
-    padding: 3px 8px;
-    border: 1px dashed rgba(0, 240, 255, 0.4);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .group-code:hover { border-color: #00f0ff; }
-
-  .group-members {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 9999px;
-    background: rgba(41, 42, 46, 0.80);
-    font-size: 0.74rem;
-    color: #849495;
-  }
-  .chip b { color: #e3e2e8; font-weight: 600; }
-
-  .invite-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    border: 1px solid rgba(0, 240, 255, 0.35);
-    border-radius: 16px;
-    background: rgba(0, 240, 255, 0.06);
-  }
-  .invite-card span { flex: 1; font-size: 0.84rem; color: #e3e2e8; }
-
   #auth {
     position: fixed;
     inset: 0;
@@ -807,19 +1205,41 @@ tailwind.config = {
     font-size: 0.74rem;
   }
 
+  /* ── RESPONSIVE ───────────────────────────────────────────────── */
   @media (max-width: 720px) {
     #social { flex-direction: column; }
     .social-side {
       width: 100%;
       max-height: 46%;
-      border-right: none;
-      border-bottom: 1px solid rgba(59, 73, 75, 0.4);
       border-radius: 0 0 16px 16px;
     }
     .social-body { padding: 14px; }
+    .chat-form-social { width: calc(100% - 20px); }
   }
 
-  /* ══ HOME ══════════════════════════════════════════════════════ */
+  /* ── SCROLLBAR HIDE ────────────────────────────────────────────── */
+  #social { z-index: 1; }
+
+  .social-body,
+  .chat-log-social,
+  #side-groups,
+  #groups,
+  .chat-log,
+  .social-right-body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .social-body::-webkit-scrollbar,
+  .chat-log-social::-webkit-scrollbar,
+  #side-groups::-webkit-scrollbar,
+  #groups::-webkit-scrollbar,
+  .chat-log::-webkit-scrollbar,
+  .social-right-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+    /* ══ HOME ══════════════════════════════════════════════════════ */
   #home {
     position: fixed;
     inset: 0;
@@ -1676,6 +2096,11 @@ tailwind.config = {
       </div>
     </div>
 
+    <div class="side-search">
+      <span class="side-search-ico material-symbols-rounded">search</span>
+      <input class="side-search-input" id="side-search" type="search" placeholder="Поиск групп…" autocomplete="off">
+    </div>
+
     <div class="side-list hidden" id="side-groups" style="flex:1;overflow-y:auto;padding:8px 12px">
       <div class="side-empty" id="groups-empty">Групп нет.<br>Создайте или войдите по коду.</div>
       <div id="groups"></div>
@@ -1716,6 +2141,19 @@ tailwind.config = {
       </div>
     </div>
   </main>
+
+  <!-- RIGHT PANEL: member presence -->
+  <div class="social-right" id="social-right">
+    <div class="social-right-head">
+      <div class="social-right-head-row">
+        <span><span class="live-dot"></span>Участники</span>
+      </div>
+      <div class="social-right-sub" id="right-panel-sub">Выберите группу</div>
+    </div>
+    <div class="social-right-body" id="right-panel-body">
+      <div class="side-empty">Выберите группу, чтобы увидеть участников</div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ AUTH ══ -->
@@ -4701,9 +5139,30 @@ tailwind.config = {
   let beatTimer = null;
   let beatWho = null;
 
+  // A beat is only a "I am here right now" stamp.  Readers treat a stamp older
+  // than PRESENCE_TTL as offline: the broker retains the last value forever, so
+  // without an expiry someone who closed the tab a week ago would stay green.
+  const PRESENCE_TTL = 65 * 1000;
+
   function beat() {
     if (!profile) return;
     put(ROOT + '/p/' + profile.id, { id: profile.id, at: Date.now() });
+  }
+
+  // Reads the retained beat of each requested user.  Every read is an ad-hoc
+  // connection (the writer bus must not churn subscriptions), so this runs them
+  // side by side and tolerates individual failures.
+  async function getPresence(ids) {
+    const list = Array.isArray(ids) ? ids.filter(Boolean).slice(0, 60) : [];
+    if (!list.length) return {};
+    const now = Date.now();
+    const out = {};
+    await Promise.all(list.map(async (uid) => {
+      let rec = null;
+      try { rec = await readTopic(ROOT + '/p/' + uid, 3500); } catch (_) {}
+      out[uid] = !!rec && typeof rec.at === 'number' && (now - rec.at) < PRESENCE_TTL;
+    }));
+    return out;
   }
 
   function startPresence() {
@@ -5566,6 +6025,7 @@ tailwind.config = {
     renameGroup,
     startPresence,
     stopPresence,
+    getPresence,
     inviteToCall,
     pendingInvites,
     dismissInvite,
@@ -5646,6 +6106,10 @@ tailwind.config = {
     btnCallAccept: $('#btn-call-accept'),
     btnCallDecline: $('#btn-call-decline'),
     btnCallHangup: $('#btn-call-hangup'),
+    sideSearch:     $('#side-search'),
+    rightPanel:     $('#social-right'),
+    rightPanelSub:  $('#right-panel-sub'),
+    rightPanelBody: $('#right-panel-body'),
   };
 
   if (!el.social || !api) return;
@@ -5695,12 +6159,72 @@ tailwind.config = {
     return ERRORS[raw] || raw;
   }
 
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function renderRightPanel(gid) {
+    if (!el.rightPanelBody) return;
+    if (!gid) {
+      el.rightPanelSub && (el.rightPanelSub.textContent = 'Выберите группу');
+      el.rightPanelBody.innerHTML = '<div class="side-empty">Выберите группу, чтобы увидеть участников</div>';
+      return;
+    }
+    const groups = api.listGroups();
+    const g = groups.find(x => x.id === gid);
+    if (!g) return;
+    const members = Array.isArray(g.members) ? g.members : [];
+    el.rightPanelSub && (el.rightPanelSub.textContent = g.name || gid);
+
+    el.rightPanelBody.innerHTML = '<div class="side-empty" style="opacity:0.5">Загрузка…</div>';
+
+    let presence = {};
+    try { presence = await api.getPresence(members.map(m => m.id || m)); } catch(_) {}
+
+    const online = members.filter(m => presence[m.id || m]);
+    const offline = members.filter(m => !presence[m.id || m]);
+
+    el.rightPanelBody.innerHTML = '';
+
+    function makeSection(label, list, isOnline) {
+      if (!list.length) return;
+      const sec = document.createElement('div');
+      sec.className = 'presence-section';
+      const lbl = document.createElement('div');
+      lbl.className = 'presence-section-label';
+      lbl.textContent = label + ' — ' + list.length;
+      sec.appendChild(lbl);
+      list.forEach(m => {
+        const uid = m.id || m;
+        const name = m.display || m.name || uid;
+        const color = colorFor(uid);
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        row.innerHTML = '\
+        <div class="member-ava" style="background:' + color + '">\
+          ' + escHtml((name[0]||'?').toUpperCase()) + '\
+          <span class="member-status' + (isOnline ? ' online' : '') + '"></span>\
+        </div>\
+        <div class="member-info">\
+          <div class="member-name' + (isOnline ? '' : ' offline') + '">' + escHtml(name) + '</div>\
+          <div class="member-detail' + (isOnline ? ' online-label' : '') + '">' + (isOnline ? 'В сети' : 'Не в сети') + '</div>\
+        </div>';
+        sec.appendChild(row);
+      });
+      el.rightPanelBody.appendChild(sec);
+    }
+
+    makeSection('В сети', online, true);
+    makeSection('Не в сети', offline, false);
+    if (!members.length) el.rightPanelBody.innerHTML = '<div class="side-empty">Нет участников</div>';
+  }
+
   // ── ACCOUNT ───────────────────────────────────────────────────────────────
   function paintMe() {
     const p = api.profile;
     const signedIn = !!p;
     el.meName.textContent = p ? p.display_name : 'Гость';
-    el.meTag.textContent = p ? '@' + p.username : 'без аккаунта';
+    el.meTag.textContent = p ? 'В сети' : 'без аккаунта';
     el.meAvatar.textContent = initials(p ? p.display_name : '?');
     el.meAvatar.style.background = p ? colorFor(p.id) : 'var(--muted)';
     el.btnSignout.hidden = !signedIn;
@@ -5965,6 +6489,7 @@ tailwind.config = {
     el.panelGroups.classList.add('hidden');
     el.panelChat.classList.remove('hidden');
     setChatChrome(group);
+    renderRightPanel(group.id);
 
     // Show cached history instantly before the network round-trip.
     loadChatHistory(group.id);
@@ -6033,6 +6558,7 @@ tailwind.config = {
     el.panelChat.classList.add('hidden');
     el.panelGroups.classList.remove('hidden');
     setChatChrome(null);
+    renderRightPanel(null);
   }
 
   // The single header switches between the group list and an open chat, so the
@@ -6505,6 +7031,16 @@ tailwind.config = {
 
   if (el.groupTab) el.groupTab.addEventListener('click', showGroups);
   if (el.chatBack) el.chatBack.addEventListener('click', exitChat);
+
+  if (el.sideSearch) {
+    el.sideSearch.addEventListener('input', () => {
+      const q = el.sideSearch.value.toLowerCase().trim();
+      document.querySelectorAll('#side-groups .rail-row').forEach(row => {
+        const name = (row.querySelector('.rail-name') || row).textContent.toLowerCase();
+        row.style.display = (!q || name.includes(q)) ? '' : 'none';
+      });
+    });
+  }
 
   el.chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
