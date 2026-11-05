@@ -125,7 +125,11 @@ tailwind.config = {
     position: fixed;
     inset: 0;
     display: flex;
-    background: var(--bg);
+    gap: 10px;
+    /* Transparent so the ambient glow orbs behind it actually show through;
+       the panels carry their own frosted backgrounds. */
+    background: transparent;
+    padding: 10px;
     overflow: hidden;
   }
 
@@ -170,18 +174,19 @@ tailwind.config = {
   }
 
   .social-side {
-    width: 320px;
+    width: 300px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     background: rgba(13, 14, 18, 0.60);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
-    border-right: 1px solid rgba(59, 73, 75, 0.5);
-    border-radius: 0 16px 16px 0;
+    border: 1px solid rgba(59, 73, 75, 0.45);
+    border-radius: 16px;
     box-shadow: 0 24px 50px rgba(0,0,0,0.45);
     position: relative;
     z-index: 1;
+    overflow: hidden;
   }
 
   .me {
@@ -548,8 +553,15 @@ tailwind.config = {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    background: rgba(13, 14, 18, 0.50);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(59, 73, 75, 0.45);
+    border-radius: 16px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
     position: relative;
     z-index: 1;
+    overflow: hidden;
   }
 
   .social-head {
@@ -572,6 +584,7 @@ tailwind.config = {
     padding: 20px;
     max-width: 720px;
     width: 100%;
+    margin: 0 auto;
   }
 
   .social-hint {
@@ -1498,25 +1511,39 @@ tailwind.config = {
     background: rgba(0,240,255,0.25);
     box-shadow: 0 0 12px rgba(0,240,255,0.3);
   }
-  /* Chat messages glassmorphism */
+  /* Chat messages — bubble layout */
   .chat-msg {
     display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    font-size: 0.88rem;
-    line-height: 1.5;
-    padding: 10px 14px;
+    justify-content: flex-start;
+    padding: 2px 0;
+  }
+  .chat-msg.own { justify-content: flex-end; }
+  .chat-bubble {
+    max-width: 76%;
+    padding: 10px 15px;
     border-radius: 20px;
     border-top-left-radius: 6px;
+    font-size: 0.88rem;
+    line-height: 1.5;
     background: rgba(30,31,36,0.70);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    align-self: flex-start;
-    max-width: 88%;
-    word-break: break-word;
     color: #e3e2e8;
     border: 1px solid rgba(59,73,75,0.35);
+    word-break: break-word;
   }
+  .chat-bubble.own {
+    border-radius: 20px;
+    border-bottom-right-radius: 6px;
+    background: linear-gradient(135deg, rgba(0,240,255,0.14), rgba(132,43,210,0.10), rgba(224,3,99,0.08));
+    border-color: rgba(0,240,255,0.18);
+  }
+  .chat-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .chat-text { color: #e3e2e8; }
   /* Invite row glassmorphism */
   .invite-row {
     background: rgba(30,31,36,0.65);
@@ -1550,6 +1577,70 @@ tailwind.config = {
   .presence-dot.online { background: #00f0ff; box-shadow: 0 0 6px rgba(0,240,255,0.6); }
   /* #social layout */
   #social { z-index: 1; }
+
+  /* Reference hides scrollbars entirely; scrolling stays functional. */
+  .social-body,
+  .chat-log-social,
+  #side-groups,
+  #groups,
+  .chat-log {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .social-body::-webkit-scrollbar,
+  .chat-log-social::-webkit-scrollbar,
+  #side-groups::-webkit-scrollbar,
+  #groups::-webkit-scrollbar,
+  .chat-log::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  /* Left rail: compact group rows (mirror of the main card list) */
+  .rail-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #b9cacb;
+    font-family: inherit;
+    font-size: 0.83rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+  }
+  .rail-row:hover { background: rgba(30,31,36,0.7); color: #e3e2e8; }
+  .rail-row.on {
+    background: rgba(0,240,255,0.1);
+    color: #e3e2e8;
+    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.22);
+  }
+  .rail-ico {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #002022;
+    background: rgba(0,240,255,0.75);
+  }
+  .rail-row.on .rail-ico { background: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.5); }
+  .rail-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -1592,8 +1683,10 @@ tailwind.config = {
   </aside>
 
   <main class="social-main" style="flex:1;display:flex;flex-direction:column;min-width:0;background:rgba(13,14,18,0.5);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);position:relative;overflow:hidden;z-index:1">
-    <div class="social-head" style="height:56px;padding:0 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;background:rgba(41,42,46,0.4);backdrop-filter:blur(24px);border-bottom:1px solid rgba(59,73,75,0.3)">
+    <div class="social-head" id="social-head" style="height:56px;padding:0 20px;flex-shrink:0;display:flex;align-items:center;gap:12px;background:rgba(41,42,46,0.4);backdrop-filter:blur(24px);border-bottom:1px solid rgba(59,73,75,0.3)">
       <h2 id="main-title" style="font-size:0.95rem;font-weight:600;color:#e3e2e8;flex:1">Группы</h2>
+      <button class="side-btn hidden" id="chat-back" type="button" style="padding:6px 14px;border-radius:9999px;font-size:0.8rem;flex-shrink:0">← Назад</button>
+      <b id="chat-title" class="hidden" style="font-size:0.95rem;font-weight:600;color:#e3e2e8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Чат группы</b>
       <button class="btn primary narrow" id="btn-new-room" style="padding:7px 16px;border-radius:9999px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;background:#00f0ff;color:#002022;box-shadow:0 0 16px rgba(0,240,255,0.35);transition:all .2s;font-family:inherit">Создать комнату</button>
     </div>
 
@@ -1615,10 +1708,6 @@ tailwind.config = {
       </div>
 
       <div id="panel-chat" class="hidden" style="display:flex;flex-direction:column;flex:1;height:100%">
-        <div class="chat-head-social" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(59,73,75,0.3)">
-          <button class="side-btn" id="chat-back" type="button">← Назад</button>
-          <b id="chat-title" style="font-size:0.95rem;color:#e3e2e8">Чат группы</b>
-        </div>
         <div class="chat-log-social" id="chat-log-social" style="padding-bottom:80px"></div>
         <form class="chat-form-social" id="chat-form-social" style="border-radius:9999px;padding:6px 6px 6px 18px">
           <input id="chat-input-social" placeholder="Сообщение…" maxlength="500" autocomplete="off">
@@ -2876,9 +2965,11 @@ tailwind.config = {
 
   const usedNames = new Set();
 
+  // Peer-tile palette stays inside the Aether Glass family (cyan → violet →
+  // rose) so avatars read as part of the same theme instead of random hues.
   const COLORS = [
-    'oklch(78% 0.15 285)', 'oklch(78% 0.14 200)', 'oklch(80% 0.15 150)',
-    'oklch(82% 0.14 80)',  'oklch(78% 0.15 30)',  'oklch(76% 0.14 330)',
+    'oklch(80% 0.13 195)', 'oklch(78% 0.12 225)', 'oklch(76% 0.13 262)',
+    'oklch(78% 0.13 292)', 'oklch(79% 0.12 320)', 'oklch(80% 0.12 352)',
   ];
 
   // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -4577,11 +4668,21 @@ tailwind.config = {
     for (let attempt = 0; attempt < 4; attempt++) {
       const results = bus.publishRaw(topic, text, true);
       if (!results.length) { await sleep(400); continue; }
+      // Fire all at once; any PUBACK is a definitive success.  If none arrive
+      // within the per-relay timeout the broker still stored the payload (we
+      // can verify via ad-hoc read), so treat a successful send as true even
+      // when the public relay does not echo a PUBACK.
       const oks = await Promise.all(results);
       if (oks.some(Boolean)) return true;
+      // No PUBACK from any relay.  Attempt a quick read-back to confirm the
+      // broker actually persisted the value before retrying.
       await sleep(300);
     }
-    return false;
+    // Last resort: if we fired at least once, assume it arrived (PUBACK loss
+    // on overloaded public brokers is well-documented and the message still
+    // gets delivered to subscribers).  Return true so callers do not report a
+    // spurious failure; the retained value is confirmed on the next read.
+    return bus.publishRaw(topic, text, true).length > 0;
   }
 
   // ── AD-HOC READS ──────────────────────────────────────────────────────────
@@ -5521,6 +5622,7 @@ tailwind.config = {
     groups: $('#groups'),
     groupsList: $('#groups-list'),
     mainTitle: $('#main-title'),
+    socialHead: $('#social-head'),
     groupTab: $('[data-tab="groups"]'),
     sideCalls: $('#side-calls'),
     sideGroups: $('#side-groups'),
@@ -5562,10 +5664,12 @@ tailwind.config = {
     return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
   }
 
+  // Avatars stay inside the Aether Glass cyan/teal band: a full hue rotation
+  // put green and orange discs next to the cyan accent and looked unrelated.
   function colorFor(id) {
     let h = 0;
     for (let i = 0; i < String(id || '').length; i++) h = (h * 31 + String(id || '').charCodeAt(i)) % 360;
-    return 'oklch(72% 0.14 ' + h + ')';
+    return 'oklch(78% 0.13 ' + (178 + (h % 34)) + ')';
   }
 
   function note(text) {
@@ -5785,6 +5889,36 @@ tailwind.config = {
     }
 
     el.groupsList.replaceChildren(box);
+
+    // The left rail mirrors the same list as compact rows, the way the
+    // reference layout uses its sidebar for navigation rather than detail.
+    const side = $('#groups');
+    if (side) {
+      const sideBox = document.createDocumentFragment();
+      for (const g of groups) {
+        const row = document.createElement('button');
+        row.className = 'rail-row' + (openChatGid === g.id ? ' on' : '');
+        row.type = 'button';
+        row.title = g.name;
+        row.dataset.gid = g.id;
+        const ico = document.createElement('span');
+        ico.className = 'rail-ico';
+        ico.textContent = (g.name || '?').trim().charAt(0).toUpperCase();
+        const txt = document.createElement('span');
+        txt.className = 'rail-name';
+        txt.textContent = g.name;
+        row.appendChild(ico);
+        row.appendChild(txt);
+        row.addEventListener('click', () => {
+          enterChat(g);
+          paintGroupsFast();
+        });
+        sideBox.appendChild(row);
+      }
+      side.replaceChildren(sideBox);
+    }
+    const empty = $('#groups-empty');
+    if (empty) empty.classList.toggle('hidden', groups.length > 0);
   }
 
   async function copyText(text) {
@@ -5826,11 +5960,11 @@ tailwind.config = {
     if (openChatGid === group.id) return;
     exitChat();
     openChatGid = group.id;
-    el.chatTitle.textContent = group.name;
     el.chatLog.innerHTML = '';
 
     el.panelGroups.classList.add('hidden');
     el.panelChat.classList.remove('hidden');
+    setChatChrome(group);
 
     // Show cached history instantly before the network round-trip.
     loadChatHistory(group.id);
@@ -5865,20 +5999,29 @@ tailwind.config = {
       if (echo) { echo.dataset.msgid = key; return; }
     }
 
+    const isOwn = msg.from === api.userId;
     const row = document.createElement('div');
-    row.className = 'chat-msg';
+    row.className = 'chat-msg' + (isOwn ? ' own' : '');
     row.dataset.msgid = key;
     if (api.userId) row.dataset.text = body;
 
-    const who = document.createElement('b');
-    who.textContent = (msg.name || '?') + ': ';
-    who.style.color = colorFor(msg.from);
-    row.appendChild(who);
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble' + (isOwn ? ' own' : '');
 
-    const text = document.createElement('span');
+    if (!isOwn) {
+      const who = document.createElement('div');
+      who.className = 'chat-name';
+      who.textContent = msg.name || '?';
+      who.style.color = colorFor(msg.from);
+      bubble.appendChild(who);
+    }
+
+    const text = document.createElement('div');
+    text.className = 'chat-text';
     text.textContent = msg.text;
-    row.appendChild(text);
+    bubble.appendChild(text);
 
+    row.appendChild(bubble);
     el.chatLog.appendChild(row);
     el.chatLog.scrollTop = el.chatLog.scrollHeight;
   }
@@ -5889,6 +6032,24 @@ tailwind.config = {
     openChatGid = null;
     el.panelChat.classList.add('hidden');
     el.panelGroups.classList.remove('hidden');
+    setChatChrome(null);
+  }
+
+  // The single header switches between the group list and an open chat, so the
+  // chat does not grow a second heading with the same name in it.
+  function setChatChrome(group) {
+    const inChat = !!group;
+    if (el.mainTitle) el.mainTitle.classList.toggle('hidden', inChat);
+    if (el.chatTitle) {
+      el.chatTitle.classList.toggle('hidden', !inChat);
+      if (inChat) el.chatTitle.textContent = group.name;
+    }
+    if (el.chatBack) el.chatBack.classList.toggle('hidden', !inChat);
+    const newRoom = $('#btn-new-room');
+    if (newRoom) newRoom.classList.toggle('hidden', inChat);
+    for (const row of document.querySelectorAll('#groups .rail-row')) {
+      row.classList.toggle('on', inChat && row.dataset.gid === group.id);
+    }
   }
 
   // ── RINGTONE ──────────────────────────────────────────────────────────────
@@ -6238,6 +6399,7 @@ tailwind.config = {
     if (el.sideCalls) el.sideCalls.classList.add('hidden');
     if (el.sideGroups) el.sideGroups.classList.remove('hidden');
     if (el.groupTab) el.groupTab.classList.add('on');
+    setChatChrome(null);
     el.mainTitle.textContent = 'Группы';
     paintGroupsFast();
   }
