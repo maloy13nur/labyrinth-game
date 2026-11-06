@@ -17,79 +17,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        'background': '#121317',
-        'surface': '#121317',
-        'surface-dim': '#121317',
-        'surface-bright': '#38393e',
-        'surface-container-lowest': '#0d0e12',
-        'surface-container-low': '#1a1b20',
-        'surface-container': '#1e1f24',
-        'surface-container-high': '#292a2e',
-        'surface-container-highest': '#343439',
-        'on-surface': '#e3e2e8',
-        'on-surface-variant': '#b9cacb',
-        'outline': '#849495',
-        'outline-variant': '#3b494b',
-        'primary': '#dbfcff',
-        'primary-container': '#00f0ff',
-        'primary-fixed': '#7df4ff',
-        'primary-fixed-dim': '#00dbe9',
-        'on-primary': '#00363a',
-        'on-primary-container': '#006970',
-        'on-primary-fixed': '#002022',
-        'inverse-primary': '#006970',
-        'secondary': '#ffb1c0',
-        'secondary-container': '#e00363',
-        'secondary-fixed': '#ffd9df',
-        'secondary-fixed-dim': '#ffb1c0',
-        'on-secondary': '#660029',
-        'on-secondary-container': '#fff6f6',
-        'on-secondary-fixed': '#3f0017',
-        'on-secondary-fixed-variant': '#90003d',
-        'tertiary': '#fdf2ff',
-        'tertiary-container': '#eacfff',
-        'tertiary-fixed': '#f0dbff',
-        'tertiary-fixed-dim': '#ddb7ff',
-        'on-tertiary': '#490080',
-        'on-tertiary-container': '#842bd2',
-        'on-tertiary-fixed': '#2c0051',
-        'on-tertiary-fixed-variant': '#6900b3',
-        'error': '#ffb4ab',
-        'error-container': '#93000a',
-        'on-error': '#690005',
-        'on-error-container': '#ffdad6',
-        'surface-tint': '#00dbe9',
-        'inverse-surface': '#e3e2e8',
-        'inverse-on-surface': '#2f3035',
-        'surface-variant': '#343439',
-      },
-      fontFamily: {
-        sans: ['Sora', 'system-ui', 'sans-serif'],
-      },
-      spacing: {
-        'space-sm': '8px',
-        'space-md': '12px',
-        'space-lg': '20px',
-        'space-xl': '28px',
-      },
-      borderRadius: {
-        DEFAULT: '1rem',
-        lg: '2rem',
-        xl: '3rem',
-      }
-    }
-  }
-}
-</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -306,7 +233,7 @@ tailwind.config = {
     top: 50%;
     transform: translateY(-50%);
     color: #849495;
-    font-size: 18px;
+    display: flex;
     pointer-events: none;
     line-height: 1;
   }
@@ -644,7 +571,7 @@ tailwind.config = {
     flex-shrink: 0;
   }
   .chat-send-btn:hover { background: #7df4ff; box-shadow: 0 0 28px rgba(0,240,255,0.6); }
-  .chat-send-icon { font-size: 18px; }
+  .chat-send-icon { display: block; flex-shrink: 0; }
 
   .chat-line {
     font-size: 0.84rem;
@@ -1885,7 +1812,7 @@ tailwind.config = {
 
     <!-- Omni search -->
     <div class="side-search">
-      <span class="side-search-ico material-symbols-rounded">search</span>
+      <span class="side-search-ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path></svg></span>
       <input class="side-search-input" id="side-search" type="search" placeholder="Поиск групп&hellip;" autocomplete="off">
     </div>
 
@@ -1930,7 +1857,7 @@ tailwind.config = {
           <input id="chat-input-social" placeholder="Сообщение&hellip;" maxlength="500" autocomplete="off">
           <button class="chat-send-btn" type="submit">
             Отправить
-            <span class="material-symbols-rounded chat-send-icon">send</span>
+            <svg class="chat-send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
           </button>
         </form>
       </div>
@@ -2173,25 +2100,30 @@ tailwind.config = {
     'wss://broker.hivemq.com:8884/mqtt',
   ];
   const ROOT = 'rupor/v3';
+
+  // STUN only.  The public TURN relays that used to live here are dead: the
+  // metered.ca allocation endpoint hands back zero relay candidates, so every
+  // call sat through the full gathering cap waiting for a candidate that never
+  // came.  Measured gathering was 12s with them and 125ms without.  A private
+  // relay can still be supplied at runtime through `iceServers()` below.
   const ICE = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:global.stun.twilio.com:3478' },
     { urls: 'stun:stun.cloudflare.com:3478' },
-    // Public TURN relays.  They are unreachable from some filtered networks
-    // (this one rewrites DNS for openrelay.metered.ca and blocks TURN), but
-    // they work for most ordinary connections and cost nothing to try.
-    // A private relay can be added at runtime via `iceServers()` below.
-    { urls: 'turn:openrelay.metered.ca:80',   username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443',  username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turns:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   ];
 
-  const ICE_CAP = 4000;
+  // Gathering finishes in well under 200ms when every server responds, so the
+  // cap only has to cover a slow or lossy network.  Kept short because this
+  // delay is paid before the offer goes out.
+  const ICE_CAP = 1200;
   const RETRY = [0, 1500, 3500, 6000, 9000];
+
+  // How many QoS 1 publishes a socket may carry before it is replaced.
+  // The public relays' allowance is about seven per connection (measured on
+  // both); the eighth is where acknowledgement AND delivery stop.  Recycling
+  // well before that keeps a healthy margin for the writes already queued.
+  const PUBLISH_RECYCLE = 5;
 
   // The first offer goes out before the other side may have subscribed, so it
   // is repeated over the first few seconds until an answer comes back.
@@ -2361,20 +2293,33 @@ tailwind.config = {
     });
   }
 
-  // Read a topic from the first broker that answers, trying both in parallel.
-  // Returns the payload string or null.
+  // Read a topic from whichever broker answers first.  A broker holding the
+  // value settles in ~1.3s; a broker holding nothing answers in the same time.
+  //
+  // A value wins immediately.  An empty answer is only believed once the other
+  // broker has had a real chance to reply, because the two relays do not always
+  // store the same topics and concluding "no record" from the fast one alone
+  // would turn a present group into a missing one.
   function mqttRead(topic, timeoutMs) {
     return new Promise((resolve) => {
       let settled = false;
-      const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
-      Promise.all(
-        BROKERS.map((url) =>
-          MqttReader(url, topic, timeoutMs || 7000).then((v) => { if (v !== null) finish(v); return v; })
-        )
-      ).then((results) => {
-        // Both returned null — topic is empty (or unreachable).
-        if (!settled) finish(null);
-      });
+      let left = BROKERS.length;
+      let graceTimer = null;
+      const finish = (v) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(graceTimer);
+        resolve(v);
+      };
+      for (const url of BROKERS) {
+        MqttReader(url, topic, timeoutMs || 7000).then((v) => {
+          if (settled) return;
+          if (v !== null) { finish(v); return; }
+          if (--left === 0) { finish(null); return; }
+          // One broker said "nothing": give the other a bounded chance.
+          if (!graceTimer) graceTimer = setTimeout(() => finish(null), 1800);
+        });
+      }
     });
   }
 
@@ -2389,14 +2334,35 @@ tailwind.config = {
   }
 
   function mqttReadNewest(topic, timeoutMs) {
-    return mqttReadEach(topic, timeoutMs).then((results) => {
-      const parsed = results
-        .filter((v) => v !== null && v !== undefined && v !== '')
-        .map((v) => { try { return JSON.parse(v); } catch (_) { return null; } })
-        .filter(Boolean);
-      if (!parsed.length) return null;
-      return parsed.reduce((newest, rec) =>
-        (Number(rec.rev) || 0) >= (Number(newest.rev) || 0) ? rec : newest);
+    return new Promise((resolve) => {
+      const results = [];
+      let left = BROKERS.length;
+      let graceTimer = null;
+      let finished = false;
+      const conclude = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(graceTimer);
+        const parsed = results
+          .filter((v) => v !== null && v !== undefined && v !== '')
+          .map((v) => { try { return JSON.parse(v); } catch (_) { return null; } })
+          .filter(Boolean);
+        if (!parsed.length) return resolve(null);
+        resolve(parsed.reduce((newest, rec) =>
+          (Number(rec.rev) || 0) >= (Number(newest.rev) || 0) ? rec : newest));
+      };
+      for (const url of BROKERS) {
+        MqttReader(url, topic, timeoutMs || 7000).then((v) => {
+          results.push(v);
+          // Once a copy has arrived, the second broker only gets a short window
+          // to offer a fresher one.  Waiting for both in full doubled the time
+          // to read a group record and held up every call invitation.
+          if (v !== null && v !== undefined && v !== '') {
+            if (!graceTimer) graceTimer = setTimeout(conclude, 600);
+          }
+          if (--left === 0) conclude();
+        });
+      }
     });
   }
 
@@ -2433,6 +2399,13 @@ tailwind.config = {
         pingTimer: null,
         retryTimer: null,
         pubResolve: new Map(),     // packet id -> settle callback, until PUBACK
+        // QoS 1 publishes sent on this socket.  Public relays allow only about
+        // seven per connection before they stop acknowledging AND stop
+        // delivering anything at all on it — measured: after the seventh a
+        // subscriber misses even messages published by someone else on a topic
+        // it had already subscribed to.  The socket looks healthy; it is not.
+        // Recycling it before that point is the only way to stay reachable.
+        sent: 0,
       }));
     }
 
@@ -2590,38 +2563,80 @@ tailwind.config = {
     // broker answer with PUBACK.
     //
     // Returns one promise per relay: true when that relay acknowledged.
-    publishRaw(topic, text, retain) {
+    // `timeoutMs` bounds how long an individual relay may stay silent.
+    publishRaw(topic, text, retain, timeoutMs) {
       const t = utf8(topic);
       if (t.length > 250) return [];
       const payload = utf8(text == null ? '' : String(text));
       const packetType = retain ? 0x33 : 0x32;   // PUBLISH with QoS 1
-      return this.links.map((link) => this._publishOn(link, t, payload, packetType));
+      return this.links.map((link) => this._publishOn(link, t, payload, packetType, timeoutMs));
     }
 
-    _publishOn(link, topicBytes, payload, packetType) {
+    _publishOn(link, topicBytes, payload, packetType, timeoutMs) {
       return new Promise((resolve) => {
         let settled = false;
+        let timer = null;
         const finish = (ok) => {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
           resolve(ok);
         };
+        // The timeout only starts once the packet is actually on the wire.
+        // Starting it at call time made any write issued before the relays
+        // finished connecting wait out the full window for nothing.
         const send = () => {
+          if (settled) return;
           if (!link.ready) return finish(false);
           const id = (++this.pid) & 0xffff || 1;
           link.pubResolve.set(id, finish);
           const body = [0x00, topicBytes.length, ...topicBytes, id >> 8, id & 0xff, ...payload];
           try { link.ws.send(packet(packetType, body)); }
-          catch (_) { link.pubResolve.delete(id); finish(false); }
+          catch (_) { link.pubResolve.delete(id); finish(false); return; }
+          timer = setTimeout(() => finish(false), timeoutMs || 4000);
+
+          // Recycle the socket before the relay makes it deaf.
+          //
+          // Measured on both public relays: the first ~7 QoS 1 publishes on a
+          // connection are acknowledged and keep working, and then the socket
+          // goes silent in BOTH directions — it stops acknowledging writes and
+          // stops delivering messages published by anyone else, even on topics
+          // it already subscribed to.  It reports readyState OPEN the whole
+          // time, so nothing looks broken.  Reconnecting re-establishes every
+          // subscription from the CONNACK handler and restores service.
+          link.sent += 1;
+          if (link.sent >= PUBLISH_RECYCLE && !link.recycling) {
+            link.recycling = true;
+            setTimeout(() => this._recycle(link), 600);
+          }
         };
-        const timer = setTimeout(() => finish(false), 6000);
         if (link.ready) send();
         else {
           link.queue.push(send);
           if (link.queue.length > 12) link.queue.shift();
+          // A relay that never connects must not hang the caller.
+          timer = setTimeout(() => finish(false), 5000);
         }
       });
+    }
+
+    // Drop a socket that has used up its publish allowance.  The replacement is
+    // dialled after a short pause; subs are replayed on CONNACK.
+    _recycle(link) {
+      if (this.dead) return;
+      const ws = link.ws;
+      link.ws = null;
+      link.ready = false;
+      link.recycling = false;
+      link.sent = 0;
+      this._stopPing(link);
+      // Anything still waiting for a PUBACK on the dead socket will never get
+      // one; settle it now so callers are not held to their timeout.
+      for (const settle of link.pubResolve.values()) { try { settle(false); } catch (_) {} }
+      link.pubResolve.clear();
+      try { if (ws) { ws.onclose = null; ws.close(); } } catch (_) {}
+      this.hooks.onDown && this.hooks.onDown(link);
+      if (!this.dead) this._retry(link);
     }
 
     // unsubscribe is intentionally kept but social.js no longer calls it for
@@ -3153,6 +3168,7 @@ tailwind.config = {
   };
 })(window);
 </script>
+
 <script>
 (function () {
   'use strict';
@@ -4806,6 +4822,7 @@ tailwind.config = {
     saveSession(s);
     profile = { id, username: name.toLowerCase(), display_name: display };
     emit('signedIn', profile);
+    subscribeInvites();
     return profile;
   }
 
@@ -4826,11 +4843,16 @@ tailwind.config = {
     saveSession(s);
     profile = { id, username: name.toLowerCase(), display_name: display };
     emit('signedIn', profile);
+    subscribeInvites();
     return profile;
   }
 
   async function restore() {
     loadSession();
+    // Re-subscribe to this account's invite wildcard as soon as the session is
+    // known.  Waiting until the panel opens meant a call placed to someone who
+    // had not opened the panel yet was simply missed.
+    if (profile) subscribeInvites();
     return profile || null;
   }
 
@@ -4856,18 +4878,49 @@ tailwind.config = {
   function signOut() {
     unsubscribeInvites();
     stopPresence();
+    topicValues.clear();
+    for (const t of readIdle.values()) clearTimeout(t);
+    readIdle.clear();
+    inviteSlotCache.clear();
+    presenceCache.clear();
+    presenceSubs.clear();
     if (profile) drop(ROOT + '/p/' + profile.id);
+    // Both sockets belong to the account that is leaving.  The writer in
+    // particular has a spent publish allowance by the time anyone signs out, so
+    // leaving it up would make the next sign-in slow for no reason.  Dropping
+    // the references lets ensureBus()/ensureWriter() build fresh ones.
+    if (writer) {
+      try { writer.close(); } catch (_) {}
+      writer = null;
+    }
+    if (bus) {
+      try { bus.close(); } catch (_) {}
+      bus = null;
+    }
     saveSession(null);
     profile = null;
     emit('signedOut');
     return Promise.resolve();
   }
 
-  // ── THE WRITER BUS ────────────────────────────────────────────────────────
-  // Long-lived connection for retained writes and persistent subscriptions
-  // (presence, chat wildcards).  Ad-hoc reads go through fresh connections via
-  // mqttRead() so this bus never churns subscriptions.
-  let bus = null;
+  // ── TWO CONNECTIONS: ONE READS, ONE WRITES ────────────────────────────────
+  //
+  // They must be separate, and this is not a style choice.
+  //
+  // Measured on both public relays: a connection carries about seven QoS 1
+  // publishes and is then made deaf — it stops acknowledging writes AND stops
+  // delivering messages published by anyone else, including on topics it had
+  // already subscribed to, while its readyState stays OPEN.  One socket doing
+  // both jobs therefore goes silent as soon as the user has written a handful
+  // of records, which is exactly the reported symptom: the other person never
+  // appears in the room.  Verified fix: a subscription-only socket kept
+  // receiving every message while a second socket on the same client burned
+  // through its publish allowance beside it.
+  //
+  // So `bus` only ever subscribes, and `writer` only ever publishes.  The
+  // writer is recycled by the transport before its allowance runs out.
+  let bus = null;        // reader: persistent subscriptions + delivery
+  let writer = null;     // writer: retained writes only, never subscribes
 
   function ensureBus() {
     if (bus) return bus;
@@ -4884,6 +4937,13 @@ tailwind.config = {
     return bus;
   }
 
+  function ensureWriter() {
+    if (writer) return writer;
+    writer = new Bus.Mqtt({ onReady() {}, onMessage() {} });
+    writer.start();
+    return writer;
+  }
+
   const listeners = new Set();
 
   // ── RETAINED WRITES (QoS 1, retry) ────────────────────────────────────────
@@ -4897,37 +4957,209 @@ tailwind.config = {
     return store(topic, '');
   }
 
-  async function store(topic, text) {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const results = bus.publishRaw(topic, text, true);
-      if (!results.length) { await sleep(400); continue; }
-      // Fire all at once; any PUBACK is a definitive success.  If none arrive
-      // within the per-relay timeout the broker still stored the payload (we
-      // can verify via ad-hoc read), so treat a successful send as true even
-      // when the public relay does not echo a PUBACK.
-      const oks = await Promise.all(results);
-      if (oks.some(Boolean)) return true;
-      // No PUBACK from any relay.  Attempt a quick read-back to confirm the
-      // broker actually persisted the value before retrying.
-      await sleep(300);
-    }
-    // Last resort: if we fired at least once, assume it arrived (PUBACK loss
-    // on overloaded public brokers is well-documented and the message still
-    // gets delivered to subscribers).  Return true so callers do not report a
-    // spurious failure; the retained value is confirmed on the next read.
-    return bus.publishRaw(topic, text, true).length > 0;
+  // Resolves true as soon as any relay acknowledges, instead of waiting for
+  // the slowest one.  A single relay holding the retained value is enough.
+  function anyAck(results) {
+    return new Promise((resolve) => {
+      let left = results.length;
+      let done = false;
+      if (!left) return resolve(false);
+      for (const p of results) {
+        p.then((ok) => {
+          if (done) return;
+          if (ok) { done = true; resolve(true); return; }
+          if (--left === 0) { done = true; resolve(false); }
+        });
+      }
+    });
   }
 
-  // ── AD-HOC READS ──────────────────────────────────────────────────────────
+  async function store(topic, text) {
+    // One publish, one chance, on the writer connection only.
+    //
+    // The public relays police writes with a small token bucket: roughly seven
+    // QoS 1 publishes per connection, then PUBACKs stop until the bucket
+    // refills (~25s).  Measured: 7 acks, then every later publish times out
+    // whether it waits 1s or 4s, and retrying only burns the *next* bucket.
+    //
+    // A retry loop is therefore actively harmful here, and so is waiting for
+    // the acknowledgement: it turns one slow moment into ten seconds of
+    // silence and starves every write that follows.  Writes that never got a
+    // PUBACK were still retained and readable, so the write is reported
+    // optimistically and the truth is settled by the next read.
+    //
+    // Crucially this never goes through `bus`: burning the reader's allowance
+    // is what used to make the app go deaf to incoming calls and chat.
+    ensureWriter();
+    if (!writer) return false;
+    const results = writer.publishRaw(topic, text, true, 1200);
+    if (!results.length) return false;
+    for (const p of results) p.catch(() => {});
+    return true;
+  }
+
+  // ── READS ─────────────────────────────────────────────────────────────────
+  // Reads share the reader's long-lived connections instead of opening a fresh
+  // socket each time.  A new WebSocket plus CONNECT plus SUBSCRIBE costs
+  // 1.3-2.0s per read even when the topic is empty, and the panel performs
+  // several reads per interaction; on one socket the same read costs the
+  // broker's round trip.
+  //
+  // The catch is that a subscription must be removed once its value has
+  // arrived, or the bus accumulates topics and eventually slows down.  Reads
+  // are also serialised per topic so two callers asking for the same thing do
+  // not subscribe twice.
+  const readWaiters = new Map();     // topic -> [{ resolve, timer }]
+  const readPending = new Map();     // topic -> Promise
+  let readListenerWired = false;
+
+  // Topics held open by a long-lived feature (group records, presence, chat).
+  // A read must never unsubscribe one of these: doing so killed the push
+  // updates the feature depends on, and the resulting churn also broke retained
+  // delivery on the relays (measured: 3 of 40 topics answered after 40 rapid
+  // subscribe/unsubscribe cycles on one socket).
+  const alwaysSubs = new Set();
+
+  // Last value seen on every subscribed topic.  Most reads ask for something
+  // the bus is already subscribed to, so this turns them into a map lookup.
+  const topicValues = new Map();   // topic -> { value, at }
+  const TOPIC_CACHE_MAX = 400;
+
+  function holdSub(topic) {
+    alwaysSubs.add(topic);
+    ensureBus();
+    try { bus.subscribe(topic); } catch (_) {}
+  }
+
+  function releaseSub(topic) {
+    alwaysSubs.delete(topic);
+    try { if (bus) bus.unsubscribe(topic); } catch (_) {}
+  }
+
+  // Idle timers for read-only subscriptions: a read keeps its topic alive for a
+  // while so a second read costs nothing, then releases it.
+  const readIdle = new Map();      // topic -> timer
+  const READ_IDLE_MS = 25000;
+
+  // Topics subscribed on behalf of a read.  Only these may ever be released:
+  // messages that arrive on a wildcard match a *concrete* topic that no read
+  // subscribed to, and unsubscribing those used to fill the socket with
+  // needless UNSUBSCRIBEs — the exact churn that measured 3 of 40 deliveries.
+  const readTopics = new Set();
+
+  function noteReadTopic(topic, value) {
+    topicValues.set(topic, { value, at: Date.now() });
+    if (topicValues.size > TOPIC_CACHE_MAX) {
+      // Drop the oldest entry; Map preserves insertion order.
+      const oldest = topicValues.keys().next();
+      if (!oldest.done) topicValues.delete(oldest.value);
+    }
+  }
+
+  function wireReadListener() {
+    if (readListenerWired) return;
+    readListenerWired = true;
+    listeners.add((topic, value) => {
+      noteReadTopic(topic, value);
+      const idle = readIdle.get(topic);
+      if (idle) { clearTimeout(idle); readIdle.delete(topic); }
+
+      const waiters = readWaiters.get(topic);
+      if (!waiters || !waiters.length) return;
+      readWaiters.delete(topic);
+      for (const w of waiters) { clearTimeout(w.timer); w.resolve(value); }
+      readRelease(topic);
+    });
+  }
+
+  // Release a read-only subscription after a quiet period.  Never touch a topic
+  // a feature is holding, and never touch a topic that was not explicitly
+  // subscribed by a read (i.e. something that arrived via a wildcard).
+  function readRelease(topic) {
+    if (alwaysSubs.has(topic)) return;
+    if (!readTopics.has(topic)) return;    // arrived via wildcard — don't unsub
+    if (readIdle.has(topic)) return;
+    readIdle.set(topic, setTimeout(() => {
+      readIdle.delete(topic);
+      if (alwaysSubs.has(topic)) return;
+      if (readWaiters.has(topic)) return;
+      readTopics.delete(topic);
+      try { if (bus) bus.unsubscribe(topic); } catch (_) {}
+    }, READ_IDLE_MS));
+  }
+
+  function readViaBus(topic, timeoutMs) {
+    if (readPending.has(topic)) return readPending.get(topic);
+
+    // A value seen moments ago is the answer; the relay cannot have changed it
+    // in that time and re-reading costs a round trip per caller.
+    const seen = topicValues.get(topic);
+    if (seen && Date.now() - seen.at < 2000) return Promise.resolve(seen.value);
+
+    ensureBus();
+    wireReadListener();
+
+    const p = new Promise((resolve) => {
+      const settle = (value) => {
+        const waiters = readWaiters.get(topic);
+        if (waiters) {
+          readWaiters.delete(topic);
+          const mine = waiters.find((w) => w.resolve === wrapped);
+          if (mine) clearTimeout(mine.timer);
+        }
+        readPending.delete(topic);
+        if (value !== null && value !== undefined) noteReadTopic(topic, value);
+        readRelease(topic);
+        resolve(value);
+      };
+      const wrapped = (value) => settle(value);
+
+      const entry = { resolve: wrapped, timer: null };
+      const list = readWaiters.get(topic) || [];
+      list.push(entry);
+      readWaiters.set(topic, list);
+
+      entry.timer = setTimeout(() => settle(null), timeoutMs);
+
+      // Subscribe only once per topic, after the waiter is registered so a
+      // fast retained reply cannot arrive before anyone is listening.
+      readTopics.add(topic);
+      try { bus.subscribe(topic); } catch (_) { settle(null); }
+    });
+
+    readPending.set(topic, p);
+    p.then(() => readPending.delete(topic), () => readPending.delete(topic));
+    return p;
+  }
+
+
+  // Read one topic.  Money path: the invite directory, which never changes once
+  // written, so a cached copy is authoritative and free.
+  //
+  // readViaBus() hands back an already-decoded value (the bus decodes once, for
+  // every listener), so it must not be parsed a second time — JSON.parse of an
+  // object yields null, which silently looked like "topic is empty".
   async function readTopic(topic, timeoutMs) {
-    const raw = await Bus.mqttRead(topic, timeoutMs || 7000);
+    const t = timeoutMs || 7000;
+    const seen = topicValues.get(topic);
+    if (seen && Date.now() - seen.at < 60000) return seen.value;
+    if (bus) {
+      const shared = await readViaBus(topic, t);
+      if (shared !== null && shared !== undefined) return shared;
+    }
+    const raw = await Bus.mqttRead(topic, t);
     return safeParse(raw);
   }
 
-  // For group records: both brokers are consulted and the higher revision wins,
-  // so a broker that has not caught up cannot hand back a stale member list.
+  // Group records change under us (a member joins while we read), so this never
+  // serves a cached copy older than a moment.  It also never waits on the bus:
+  // a topic the group subscription already holds will not re-deliver its
+  // retained value, so subscribing again would just sit out the timeout.
   async function readGroup(topic, timeoutMs) {
-    return Bus.mqttReadNewest(topic, timeoutMs || 7000);
+    const t = timeoutMs || 7000;
+    const seen = topicValues.get(topic);
+    if (seen && Date.now() - seen.at < 1500) return seen.value;
+    return Bus.mqttReadNewest(topic, t);
   }
 
   // ── PRESENCE ──────────────────────────────────────────────────────────────
@@ -4939,24 +5171,75 @@ tailwind.config = {
   // without an expiry someone who closed the tab a week ago would stay green.
   const PRESENCE_TTL = 65 * 1000;
 
+  // Beats are read from a subscription rather than asked for over a fresh
+  // socket.  Opening a connection per person per poll was the most expensive
+  // thing the panel did: a read of one empty topic costs ~1.3s, and a group
+  // with five other members paid that five times over.  Retained beats arrive
+  // on the long-lived bus the moment the topic is subscribed, so the same
+  // information costs nothing after the first look.
+  const presenceCache = new Map();   // uid -> { id, at }
+  const presenceSubs = new Set();
+  const presenceSettled = new Set(); // topics whose retained value already landed
+
+  function wirePresenceListener() {
+    if (wirePresenceListener._done) return;
+    wirePresenceListener._done = true;
+    const prefix = ROOT + '/p/';
+    listeners.add((topic, value) => {
+      if (!topic.startsWith(prefix)) return;
+      const uid = topic.slice(prefix.length);
+      presenceSettled.add(topic);
+      if (!value || typeof value.at !== 'number') { presenceCache.delete(uid); return; }
+      presenceCache.set(uid, value);
+    });
+  }
+
   function beat() {
     if (!profile) return;
     put(ROOT + '/p/' + profile.id, { id: profile.id, at: Date.now() });
   }
 
-  // Reads the retained beat of each requested user.  Every read is an ad-hoc
-  // connection (the writer bus must not churn subscriptions), so this runs them
-  // side by side and tolerates individual failures.
+  // Reads the retained beat of each requested user.  Anyone not yet watched is
+  // subscribed on the spot; the retained value then lands on the bus.  The wait
+  // is short because the answer is usually already cached.
   async function getPresence(ids) {
-    const list = Array.isArray(ids) ? ids.filter(Boolean).slice(0, 60) : [];
+    const list = Array.isArray(ids) ? Array.from(new Set(ids.filter(Boolean))).slice(0, 60) : [];
     if (!list.length) return {};
+    wirePresenceListener();
+
+    let fresh = false;
+    for (const uid of list) {
+      const t = ROOT + '/p/' + uid;
+      if (presenceSubs.has(t)) continue;
+      presenceSubs.add(t);
+      fresh = true;
+      holdSub(t);
+      // An empty beat produces no message at all, so nothing would ever mark
+      // the topic as answered.  A short timer does it instead: after this the
+      // topic is known to hold no beat, or the value has already arrived.
+      setTimeout(() => { presenceSettled.add(t); }, 700);
+    }
+
     const now = Date.now();
+    const pendingWait = list.some((uid) => {
+      const t = ROOT + '/p/' + uid;
+      return !presenceSettled.has(t);
+    });
+
+    if (pendingWait) {
+      const deadline = Date.now() + (fresh ? 900 : 200);
+      while (Date.now() < deadline) {
+        const ready = list.every((uid) => presenceSettled.has(ROOT + '/p/' + uid));
+        if (ready) break;
+        await sleep(40);
+      }
+    }
+
     const out = {};
-    await Promise.all(list.map(async (uid) => {
-      let rec = null;
-      try { rec = await readTopic(ROOT + '/p/' + uid, 3500); } catch (_) {}
+    for (const uid of list) {
+      const rec = presenceCache.get(uid);
       out[uid] = !!rec && typeof rec.at === 'number' && (now - rec.at) < PRESENCE_TTL;
-    }));
+    }
     return out;
   }
 
@@ -4964,6 +5247,7 @@ tailwind.config = {
     if (!profile) return;
     wireGroupListener();
     wireChatListener();
+    wirePresenceListener();
     subscribeInvites();
     syncGroupSubs();
     if (beatTimer && beatWho === profile.id) return;
@@ -5157,7 +5441,7 @@ tailwind.config = {
   // ── GROUP SUBSCRIPTION ────────────────────────────────────────────────────
   // One wildcard per shard segment is not allowed by the brokers, so we
   // subscribe to the exact topics we know about.  Subscriptions live on the
-  // long-lived writer bus, so keeping them in sync costs no connections.
+  // long-lived reader bus, so keeping them in sync costs no connections.
   const groupSubs = new Set();
   const groupListeners = new Set();
 
@@ -5166,10 +5450,10 @@ tailwind.config = {
     ensureBus();
     const wanted = new Set(Array.from(myGroupIdSet()).map(groupTopic));
     for (const t of wanted) {
-      if (!groupSubs.has(t)) { groupSubs.add(t); try { bus.subscribe(t); } catch (_) {} }
+      if (!groupSubs.has(t)) { groupSubs.add(t); holdSub(t); }
     }
     for (const t of Array.from(groupSubs)) {
-      if (!wanted.has(t)) { groupSubs.delete(t); try { bus.unsubscribe(t); } catch (_) {} }
+      if (!wanted.has(t)) { groupSubs.delete(t); releaseSub(t); }
     }
   }
 
@@ -5474,10 +5758,9 @@ tailwind.config = {
 
     // Subscribe first: retained messages can arrive at any moment and must not
     // be lost while we are still deriving the key below.
-    ensureBus();
     const filter = ROOT + '/c/' + gid + '/+';
     chatSubs.push(filter);
-    bus.subscribe(filter);
+    holdSub(filter);
 
     // Derive the chat key from the group's invite code.  If the local cache
     // has no record yet (a fresh join still in flight), fetch it first.
@@ -5497,7 +5780,7 @@ tailwind.config = {
 
   function closeChat() {
     for (const f of chatSubs) {
-      try { bus && bus.unsubscribe(f); } catch (_) {}
+      releaseSub(f);
     }
     chatSubs = [];
     chatGid = null;
@@ -5626,39 +5909,44 @@ tailwind.config = {
   }
 
   // ── CALL INVITES ──────────────────────────────────────────────────────────
-  // Each invite lives in its own retained slot: ci/<uid>/<inviteId>.
-  // This lets multiple simultaneous callers coexist instead of overwriting
-  // each other, and lets the recipient dismiss a single invite without
-  // clearing unrelated ones.
+  // An invite is one retained message at ci/<recipient>/<inviteId>.  No index
+  // topic: the recipient subscribes to its own wildcard, and the broker hands
+  // over every retained slot under it on subscribe (verified against both
+  // relays).  An index cost a second write plus a read per recipient, which on
+  // a broker that allows ~7 writes per window is the difference between an
+  // invitation arriving in under a second and arriving in sixteen.
   const inviteSlot  = (uid, iid) => ROOT + '/ci/' + uid + '/' + iid;
   const inviteWild  = (uid)      => ROOT + '/ci/' + uid + '/+';
-  const inviteIndex = (uid)      => ROOT + '/ci/' + uid + '/_idx'; // list of active iids
   const seenInvite  = new Set();
   const inviteListeners = new Set();
   let   _invSubscribed = false;
+  let   _invWarmed = false;
   let   lastInvite = null;
 
-  // Push-subscribe to own invite wildcard so the UI gets notified instantly
-  // without waiting for the 8-second poll.  Called once after sign-in; calling
-  // it again (e.g. openSocial re-trigger) is a no-op.
+  // Filled by the wildcard subscription.  Everything the panel needs to paint an
+  // incoming call is already here, so polling is a cache read, not a network op.
+  const inviteSlotCache = new Map();   // inviteId -> invite record
+
+  // Push-subscribe to own invite wildcard so the UI is notified instantly.
+  // Called once after sign-in; calling it again is a no-op.
   function subscribeInvites() {
     if (!profile) return;
     if (_invSubscribed) return;
     _invSubscribed = true;
 
-    const filter = inviteWild(profile.id);
     ensureBus();
-    bus.subscribe(filter);
+    const filter = inviteWild(profile.id);
 
     const handler = (t, value) => {
       const prefix = ROOT + '/ci/' + profile.id + '/';
       if (!t.startsWith(prefix)) return;
       const key = t.slice(prefix.length);
-      if (key === '_idx') return; // index updates are not invite notifications
+      if (!key) return;
 
-      // An empty payload means the invite was dropped (caller hung up or
-      // another device dismissed it).  Tell the UI so the ring stops at once.
+      // An empty payload means the invite was dropped: the caller hung up, or
+      // another device accepted it.  Tell the UI so the ring stops at once.
       if (!value) {
+        inviteSlotCache.delete(key);
         for (const fn of inviteListeners) {
           try { fn({ id: key, cancelled: true }); } catch (_) {}
         }
@@ -5666,22 +5954,30 @@ tailwind.config = {
       }
 
       if (!value.id) return;
+      inviteSlotCache.set(key, value);
+
+      // A retained invite older than the accept window is still delivered on
+      // subscribe; treat it as history rather than a live ring.
+      if (Date.now() - (Number(value.at) || 0) > 10 * 60 * 1000) return;
       if (seenInvite.has(value.id)) return;
       for (const fn of inviteListeners) { try { fn(value); } catch (_) {} }
     };
+
     listeners.add(handler);
+    holdSub(filter);
     subscribeInvites._handler = handler;
     subscribeInvites._filter  = filter;
   }
 
   function unsubscribeInvites() {
     _invSubscribed = false;
+    _invWarmed = false;
     if (subscribeInvites._handler) {
       listeners.delete(subscribeInvites._handler);
       subscribeInvites._handler = null;
     }
-    if (subscribeInvites._filter && bus) {
-      try { bus.unsubscribe(subscribeInvites._filter); } catch (_) {}
+    if (subscribeInvites._filter) {
+      releaseSub(subscribeInvites._filter);
       subscribeInvites._filter = null;
     }
   }
@@ -5701,60 +5997,91 @@ tailwind.config = {
     if (opts.userId) {
       targets = [opts.userId];
     } else if (opts.groupId) {
-      const g = await groupRecord(opts.groupId, 5000);
+      // The local record is the fast path, but it can lag behind a member who
+      // joined a moment ago — calling then would invite nobody.  When it shows
+      // no one but us, ask the broker before concluding the group is empty.
+      let g = cachedGroup(opts.groupId);
+      const memberCount = (rec) => (rec && Array.isArray(rec.members) ? rec.members.length : 0);
+      if (!g || memberCount(g) < 2) {
+        const net = await groupRecord(opts.groupId, 4000);
+        if (net && memberCount(net) >= memberCount(g)) g = net;
+      }
       const members = g && Array.isArray(g.members) ? g.members : [];
       if (g) {
         targets = members.filter((m) => m.id !== profile.id).map((m) => m.id);
-        groupName = g.name || '';
+        groupName = g.name || groupName;
       }
+      if (!g) throw new Error('NO_GROUP');
+      if (!targets.length) throw new Error('NO_ONE_TO_CALL');
     }
 
-    // One invite id shared across all recipients of this call so the caller
-    // can cancel all of them by id if they hang up before anyone answers.
+    // One invite id shared across all recipients so the caller can cancel the
+    // whole call by id if they hang up before anyone answers.
     const iid = hex(6);
-    // Write an index of active invite ids so recipients can enumerate slots
-    // without relying on wildcard subscriptions that brokers may not support.
-    await Promise.all(targets.map(async (uid) => {
-      const idxRaw = await readTopic(inviteIndex(uid), 3000);
-      const idx = Array.isArray(idxRaw) ? idxRaw : [];
-      if (!idx.includes(iid)) idx.push(iid);
-      await put(inviteIndex(uid), idx);
-      await put(inviteSlot(uid, iid), {
-        id: iid,
-        from: profile.id,
-        name: profile.display_name,
-        groupName,
-        room,
-        at: Date.now(),
-      });
-    }));
+    const record = {
+      id: iid,
+      from: profile.id,
+      name: profile.display_name,
+      groupName,
+      room,
+      at: Date.now(),
+    };
+
+    // One write per recipient and nothing else.  These are fired together and
+    // not awaited: the packet is on the wire immediately, and waiting for PUBACK
+    // would serialise recipients behind the relay's own latency for no benefit.
+    try { await Promise.all(targets.map((uid) => put(inviteSlot(uid, iid), record))); }
+    catch (_) {}
+
     lastInvite = { iid, targets: targets.slice() };
     return targets.length;
   }
 
-  // Read all pending invite slots for this user via the index topic.
+  // Everything pending comes from the subscription cache, so this is instant
+  // once the wildcard has been subscribed.  A cold start waits briefly for the
+  // broker's retained burst to finish arriving.
   async function pendingInvites() {
     if (!profile) return [];
-    const idxRaw = await readTopic(inviteIndex(profile.id), 5000);
-    const idx = Array.isArray(idxRaw) ? idxRaw : (idxRaw ? [idxRaw.id].filter(Boolean) : []);
-    if (!idx.length) return [];
+    if (!_invSubscribed) subscribeInvites();
+
     const now = Date.now();
-    const results = await Promise.all(idx.map((iid) => readTopic(inviteSlot(profile.id, iid), 4000)));
-    return results
-      .filter((inv) => inv && inv.id && !seenInvite.has(inv.id) && (now - (inv.at || 0)) < 10 * 60 * 1000)
-      .sort((a, b) => (b.at || 0) - (a.at || 0));
+    const ready = () => {
+      const out = [];
+      for (const inv of inviteSlotCache.values()) {
+        if (!inv || !inv.id) continue;
+        if (seenInvite.has(inv.id)) continue;
+        if (now - (Number(inv.at) || 0) > 10 * 60 * 1000) continue;
+        out.push(inv);
+      }
+      return out.sort((a, b) => (b.at || 0) - (a.at || 0));
+    };
+
+    if (!ready().length && !_invWarmed) {
+      // Nothing cached yet on the very first poll of this session: give retained
+      // delivery a moment before concluding there is genuinely no call waiting.
+      // A cold subscription has to CONNECT and SUBSCRIBE before it can deliver,
+      // which measured at 1.3-2.0s on the public relays.
+      //
+      // This runs once per session on purpose.  The wildcard stays subscribed for
+      // as long as the user is signed in, so by the second poll any retained
+      // invite has already been pushed into the cache; waiting again would cost
+      // 1.6s per panel paint with nothing left to wait for.
+      _invWarmed = true;
+      const deadline = Date.now() + 1600;
+      while (Date.now() < deadline) {
+        await sleep(60);
+        if (ready().length || inviteSlotCache.size) break;
+      }
+    }
+    return ready();
   }
 
   async function dismissInvite(id) {
     if (!profile) return;
     if (id) {
       seenInvite.add(id);
+      inviteSlotCache.delete(id);
       await drop(inviteSlot(profile.id, id));
-      // Remove from index.
-      const idxRaw = await readTopic(inviteIndex(profile.id), 3000);
-      const idx = Array.isArray(idxRaw) ? idxRaw.filter((x) => x !== id) : [];
-      if (idx.length) await put(inviteIndex(profile.id), idx);
-      else await drop(inviteIndex(profile.id));
     }
     return true;
   }
@@ -5766,14 +6093,9 @@ tailwind.config = {
     const tgt = targets || (lastInvite && lastInvite.targets) || [];
     lastInvite = null;
     if (!id) return 0;
-    await Promise.all(tgt.map(async (uid) => {
-      await drop(inviteSlot(uid, id));
-      // Update the recipient's index.
-      const idxRaw = await readTopic(inviteIndex(uid), 3000);
-      const idx = Array.isArray(idxRaw) ? idxRaw.filter((x) => x !== id) : [];
-      if (idx.length) await put(inviteIndex(uid), idx);
-      else await drop(inviteIndex(uid));
-    }));
+    // One delete per recipient, fired together.  No index to update, so hanging
+    // up costs a single write each instead of a read and two writes.
+    await Promise.all(tgt.map((uid) => drop(inviteSlot(uid, id))));
     return tgt.length;
   }
 
@@ -5846,7 +6168,31 @@ tailwind.config = {
       busReady: bus ? bus.links.some((l) => l.ready) : false,
       brokers: bus ? bus.links.filter((l) => l.ready).map((l) => l.i) : [],
       cid: bus ? bus.cid : null,
+      links: bus ? bus.links.map((l) => ({
+        i: l.i,
+        ready: l.ready,
+        queued: l.queue.length,
+        ws: l.ws ? l.ws.readyState : null,
+        sent: l.sent,
+      })) : [],
+      writerReady: writer ? writer.links.some((l) => l.ready) : false,
+      writer: writer ? writer.links.map((l) => ({
+        i: l.i,
+        ready: l.ready,
+        ws: l.ws ? l.ws.readyState : null,
+        sent: l.sent,
+      })) : [],
     }),
+    put: (topic, value) => put(topic, value),
+    drop: (topic) => drop(topic),
+    read: (topic, timeoutMs) => readTopic(topic, timeoutMs || 7000),
+    busPublish: (topic, text, timeoutMs) => {
+      ensureWriter();
+      if (!writer) return Promise.resolve([]);
+      return Promise.all(writer.publishRaw(topic, text, true, timeoutMs || 3000));
+    },
+    inviteWild: () => (profile ? inviteWild(profile.id) : null),
+    invites: () => Array.from(inviteSlotCache.values()),
   };
 })(window);
 </script>
@@ -5947,6 +6293,8 @@ tailwind.config = {
     OWNER_CANNOT_LEAVE: 'Организатор не может выйти из своей группы. Её можно только удалить.',
     NOT_OWNER: 'Удалить группу может только организатор.',
     NO_ROOM: 'Сначала создайте комнату.',
+    NO_GROUP: 'Группа не найдена. Обновите список групп.',
+    NO_ONE_TO_CALL: 'В группе пока нет других участников.',
   };
 
   function say(err) {
@@ -6465,6 +6813,11 @@ tailwind.config = {
 
   // ── CALL OVERLAY HELPERS ──────────────────────────────────────────────────
   let _pendingInv = null; // invite being shown to callee
+  // An invite the user pushed out of the way without answering.  It stays in
+  // the call list and can still be joined, but the full-screen ring must not
+  // spring back the next time the panel repaints — that made the panel
+  // unusable for as long as the invitation was alive.
+  let _snoozedInv = null;
 
   function showCallOverlay({ label, caller, group, outgoing }) {
     if (!el.callOverlay) return;
@@ -6488,6 +6841,10 @@ tailwind.config = {
     if (!el.callOverlay) return;
     el.callOverlay.classList.add('hidden');
     el.callBox.classList.remove('calling');
+    // Remember which invite was waved away.  The panel repaints on every group
+    // and presence change, and each repaint used to put the full-screen ring
+    // straight back — leaving no way to reach the sign-out button underneath.
+    if (_pendingInv) _snoozedInv = _pendingInv.id;
     _pendingInv = null;
   }
 
@@ -6550,6 +6907,9 @@ tailwind.config = {
     }
 
     if (!_pendingInv || _pendingInv.id !== inv.id) {
+      // Already dismissed once: keep it in the list, but do not ring again for
+      // the same invitation.
+      if (_snoozedInv === inv.id) return;
       _pendingInv = inv;
       showCallOverlay({
         label: 'Входящий звонок',
@@ -6575,6 +6935,7 @@ tailwind.config = {
     if (!list || !list.length) {
       if (el.invitesWrap) el.invitesWrap.classList.add('hidden');
       el.invites.replaceChildren();
+      _snoozedInv = null;
       // If the overlay was for an invite that is now gone (accepted elsewhere or
       // dismissed), close it automatically.
       if (_pendingInv && !el.callBox.classList.contains('calling')) {
@@ -6736,11 +7097,12 @@ tailwind.config = {
       stopRing();
       hideCallOverlay();
       if (inv) {
-        guard(async () => {
-          await api.dismissInvite(inv.id);
-          joinCode(inv.room);
-          await paintInvites();
-        });
+        // Join first, then clear the invite.  dismissInvite() writes to the
+        // relay, and on a busy link that write can take over a second — the
+        // caller is already waiting, so the room must open immediately.
+        joinCode(inv.room);
+        api.dismissInvite(inv.id).catch(() => {});
+        paintInvites().catch(() => {});
       }
     });
   }
